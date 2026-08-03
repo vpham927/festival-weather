@@ -3,7 +3,7 @@ import { CurrentWeather } from "@/components/CurrentWeather";
 import { FestivalForecast } from "@/components/FestivalForecast";
 import { SourceWeatherGrid } from "@/components/SourceWeatherGrid";
 import { getFestivalById } from "@/data/festival-repository";
-import { formatDateRange } from "@/lib/format";
+import { formatDateRange, remainingFestivalDays } from "@/lib/format";
 import { getAggregatedForecast, getAggregatedWeather } from "@/lib/weather";
 import type { ForecastResponse, WeatherResponse } from "@/lib/weather/types";
 import Link from "next/link";
@@ -14,16 +14,6 @@ export const dynamic = "force-dynamic";
 type Props = {
   params: Promise<{ id: string }>;
 };
-
-/** Festival days still ahead of us, so partial coverage can be flagged honestly. */
-function remainingFestivalDays(startDate: string, endDate: string): number {
-  const today = new Date().toISOString().slice(0, 10);
-  const from = startDate < today ? today : startDate;
-  const span =
-    (Date.parse(`${endDate}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) /
-    86_400_000;
-  return Math.max(0, Math.round(span) + 1);
-}
 
 export async function generateMetadata({ params }: Props) {
   const { id } = await params;

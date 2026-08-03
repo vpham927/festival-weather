@@ -1,6 +1,7 @@
 "use client";
 
 import type { Festival } from "@/data/festivals";
+import { FestivalDetailOverlay } from "@/components/FestivalDetailOverlay";
 import { NoForecastIcon, WeatherIcon } from "@/components/WeatherIcon";
 import { conditionLabel, formatDateRange } from "@/lib/format";
 import type {
@@ -8,7 +9,6 @@ import type {
   ForecastSummary,
   WeatherCondition,
 } from "@/lib/weather/types";
-import Link from "next/link";
 import {
   useMemo,
   useState,
@@ -36,6 +36,7 @@ type Props = {
 export function FestivalList({ items }: Props) {
   const [query, setQuery] = useState("");
   const [isPending, startTransition] = useTransition();
+  const [selected, setSelected] = useState<Festival | null>(null);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -82,7 +83,11 @@ export function FestivalList({ items }: Props) {
                 } as CSSProperties
               }
             >
-              <Link href={`/festivals/${f.id}`} className="festival-card-link">
+              <button
+                type="button"
+                className="festival-card-link"
+                onClick={() => setSelected(f)}
+              >
                 <div className="festival-card-top">
                   <h2 className="festival-name">{f.name}</h2>
                   <p className="festival-meta">
@@ -160,11 +165,19 @@ export function FestivalList({ items }: Props) {
                     )}
                   </div>
                 </div>
-              </Link>
+              </button>
             </li>
           ))}
         </ul>
       )}
+
+      {selected ? (
+        <FestivalDetailOverlay
+          key={selected.id}
+          festival={selected}
+          onClose={() => setSelected(null)}
+        />
+      ) : null}
     </div>
   );
 }

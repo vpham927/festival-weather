@@ -29,3 +29,16 @@ export function conditionLabel(condition: string): string {
   };
   return labels[condition] ?? condition;
 }
+
+/** Festival days still ahead of us, so partial forecast coverage can be flagged. */
+export function remainingFestivalDays(
+  startDate: string,
+  endDate: string,
+): number {
+  const today = new Date().toISOString().slice(0, 10);
+  const from = startDate < today ? today : startDate;
+  const span =
+    (Date.parse(`${endDate}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) /
+    86_400_000;
+  return Math.max(0, Math.round(span) + 1);
+}
