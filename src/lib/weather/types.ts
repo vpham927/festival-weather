@@ -23,7 +23,8 @@ export type WeatherSourceName =
   | "open-meteo"
   | "openweather"
   | "tomorrow"
-  | "weatherapi";
+  | "weatherapi"
+  | "google";
 
 export type SourceCurrent = {
   source: WeatherSourceName;

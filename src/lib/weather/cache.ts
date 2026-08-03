@@ -4,6 +4,7 @@ type CacheEntry<T> = {
 };
 
 const store = new Map<string, CacheEntry<unknown>>();
+const errorStore = new Map<string, number>();
 
 /** Default 30 minutes — override with WEATHER_CACHE_TTL_SECONDS */
 export function getWeatherCacheTtlMs(): number {
@@ -23,8 +24,27 @@ export function getCached<T>(key: string): T | undefined {
   return entry.value as T;
 }
 
-export function setCached<T>(key: string, value: T, ttlMs = getWeatherCacheTtlMs()): void {
+export function setCached<T>(
+  key: string,
+  value: T,
+  ttlMs = getWeatherCacheTtlMs(),
+): void {
   store.set(key, { value, expiresAt: Date.now() + ttlMs });
+  errorStore.delete(key);
+}
+
+function isErrorCached(key: string): boolean {
+  const until = errorStore.get(key);
+  if (until === undefined) return false;
+  if (Date.now() > until) {
+    errorStore.delete(key);
+    return false;
+  }
+  return true;
+}
+
+function setErrorCached(key: string, ttlMs = 60_000): void {
+  errorStore.set(key, Date.now() + ttlMs);
 }
 
 /** In-flight dedupe so parallel home-page fetches share one upstream call. */
@@ -44,6 +64,10 @@ export async function withCache<T>(
     return hit;
   }
 
+  if (isErrorCached(key)) {
+    throw new Error(`Weather cache cooling down after a recent failure (${key})`);
+  }
+
   const existing = inflight.get(key);
   if (existing) {
     return existing as Promise<T>;
@@ -54,10 +78,15 @@ export async function withCache<T>(
       setCached(key, value, ttlMs);
       return value;
     })
+    .catch((error) => {
+      // Brief cooldown so a 429 storm doesn't retry on every page load.
+      setErrorCached(key, 60_000);
+      throw error;
+    })
     .finally(() => {
       inflight.delete(key);
     });
 
   inflight.set(key, promise);
-  return promise;
+  return promise as Promise<T>;
 }

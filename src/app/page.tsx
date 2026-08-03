@@ -1,6 +1,7 @@
 import { FestivalList } from "@/components/FestivalList";
 import type { FestivalListItem } from "@/components/FestivalList";
 import { listFestivals } from "@/data/festival-repository";
+import { mapPool } from "@/lib/map-pool";
 import {
   getAggregatedForecast,
   getAggregatedWeather,
@@ -9,13 +10,21 @@ import {
 
 export const dynamic = "force-dynamic";
 
+/** Keep home-page upstream calls gentle — free weather tiers rate-limit hard on Vercel. */
+const HOME_WEATHER_CONCURRENCY = 2;
+
 export default async function HomePage() {
   const festivals = await listFestivals();
 
-  const weatherResults = await Promise.all(
-    festivals.map(async (festival) => {
-      const [currentResult, forecastResult] = await Promise.allSettled([
+  const weatherResults = await mapPool(
+    festivals,
+    HOME_WEATHER_CONCURRENCY,
+    async (festival) => {
+      // Current first, then forecast — halves peak parallel provider calls per festival.
+      const currentResult = await Promise.allSettled([
         getAggregatedWeather({ lat: festival.lat, lon: festival.lon }),
+      ]);
+      const forecastResult = await Promise.allSettled([
         getAggregatedForecast({
           lat: festival.lat,
           lon: festival.lon,
@@ -25,15 +34,15 @@ export default async function HomePage() {
       ]);
 
       const current =
-        currentResult.status === "fulfilled"
-          ? currentResult.value.consensus.current
+        currentResult[0].status === "fulfilled"
+          ? currentResult[0].value.consensus.current
           : null;
       const currentMeta =
-        currentResult.status === "fulfilled" ? currentResult.value : null;
+        currentResult[0].status === "fulfilled" ? currentResult[0].value : null;
 
       const forecast =
-        forecastResult.status === "fulfilled"
-          ? summarizeForecast(forecastResult.value)
+        forecastResult[0].status === "fulfilled"
+          ? summarizeForecast(forecastResult[0].value)
           : null;
 
       return {
@@ -48,7 +57,7 @@ export default async function HomePage() {
           : null,
         forecast,
       };
-    }),
+    },
   );
 
   const byId = Object.fromEntries(weatherResults.map((r) => [r.id, r]));

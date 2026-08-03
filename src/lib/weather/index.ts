@@ -1,6 +1,7 @@
 import { withCache } from "./cache";
 import { buildConsensus, buildForecastConsensus } from "./consensus";
 import { majorityCondition, mean, median, round1 } from "./normalize";
+import { fetchGoogleCurrent, fetchGoogleForecast } from "./providers/google";
 import { fetchOpenMeteoCurrent, fetchOpenMeteoForecast } from "./providers/open-meteo";
 import {
   fetchOpenWeatherCurrent,
@@ -62,6 +63,7 @@ function envKeys() {
     owmKey: process.env.OPENWEATHER_API_KEY?.trim(),
     tomorrowKey: process.env.TOMORROW_API_KEY?.trim(),
     weatherApiKey: process.env.WEATHERAPI_API_KEY?.trim(),
+    googleKey: process.env.GOOGLE_WEATHER_API_KEY?.trim(),
   };
 }
 
@@ -72,7 +74,7 @@ export async function getAggregatedWeather(
   const key = `current:${lat.toFixed(4)},${lon.toFixed(4)}`;
 
   return withCache(key, async () => {
-    const { owmKey, tomorrowKey, weatherApiKey } = envKeys();
+    const { owmKey, tomorrowKey, weatherApiKey, googleKey } = envKeys();
 
     const jobs: {
       source: WeatherSourceName;
@@ -105,6 +107,13 @@ export async function getAggregatedWeather(
       });
     }
 
+    if (googleKey) {
+      jobs.push({
+        source: "google",
+        run: () => fetchGoogleCurrent(lat, lon, googleKey),
+      });
+    }
+
     const settled = await Promise.allSettled(jobs.map((j) => j.run()));
 
     const results = settled.map((result, i) => {
@@ -127,7 +136,7 @@ export async function getAggregatedForecast(
   const key = `forecast:${lat.toFixed(4)},${lon.toFixed(4)}:${start}:${end}`;
 
   return withCache(key, async () => {
-    const { owmKey, tomorrowKey, weatherApiKey } = envKeys();
+    const { owmKey, tomorrowKey, weatherApiKey, googleKey } = envKeys();
 
     const today = new Date().toISOString().slice(0, 10);
     const horizon = addDays(today, FORECAST_HORIZON_DAYS);
@@ -180,6 +189,14 @@ export async function getAggregatedForecast(
             clampedEnd,
             weatherApiKey,
           ),
+      });
+    }
+
+    if (googleKey) {
+      jobs.push({
+        source: "google",
+        run: () =>
+          fetchGoogleForecast(lat, lon, clampedStart, clampedEnd, googleKey),
       });
     }
 

@@ -11,12 +11,13 @@ Clean, simple current weather for festival sites — blended from multiple APIs 
 ## Weather sources
 
 
-| Provider                                  | Key required          | Notes            |
-| ----------------------------------------- | --------------------- | ---------------- |
-| [Open-Meteo](https://open-meteo.com)      | No                    | Always used      |
-| [OpenWeather](https://openweathermap.org) | `OPENWEATHER_API_KEY` | Current weather  |
-| [Tomorrow.io](https://www.tomorrow.io)    | `TOMORROW_API_KEY`    | Realtime weather |
-| [WeatherAPI](https://www.weatherapi.com)  | `WEATHERAPI_API_KEY`  | Current weather  |
+| Provider                                  | Key required             | Notes                    |
+| ----------------------------------------- | ------------------------ | ------------------------ |
+| [Open-Meteo](https://open-meteo.com)      | No                       | Always used              |
+| [OpenWeather](https://openweathermap.org) | `OPENWEATHER_API_KEY`    | Current + forecast       |
+| [Tomorrow.io](https://www.tomorrow.io)    | `TOMORROW_API_KEY`       | Realtime + forecast      |
+| [WeatherAPI](https://www.weatherapi.com)  | `WEATHERAPI_API_KEY`     | Current + forecast       |
+| [Google Weather](https://developers.google.com/maps/documentation/weather) | `GOOGLE_WEATHER_API_KEY` | Maps Platform Weather API |
 
 
 The app works with **Open-Meteo alone**. Extra keys raise confidence when sources agree.

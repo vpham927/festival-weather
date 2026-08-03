@@ -110,6 +110,80 @@ export function conditionFromWeatherApi(code: number): WeatherCondition {
   return "unknown";
 }
 
+/** Google Weather API `weatherCondition.type` → shared condition. */
+export function conditionFromGoogle(type: string | undefined): WeatherCondition {
+  if (!type) return "unknown";
+
+  switch (type) {
+    case "CLEAR":
+    case "MOSTLY_CLEAR":
+      return "clear";
+    case "PARTLY_CLOUDY":
+      return "partly_cloudy";
+    case "MOSTLY_CLOUDY":
+    case "CLOUDY":
+    case "WINDY":
+      return "cloudy";
+    case "FOG":
+    case "HAZE":
+    case "SMOKE":
+      return "fog";
+    case "HEAVY_RAIN":
+    case "HEAVY_RAIN_SHOWERS":
+    case "MODERATE_TO_HEAVY_RAIN":
+    case "RAIN_PERIODICALLY_HEAVY":
+      return "heavy_rain";
+    case "WIND_AND_RAIN":
+    case "LIGHT_RAIN_SHOWERS":
+    case "CHANCE_OF_SHOWERS":
+    case "SCATTERED_SHOWERS":
+    case "RAIN_SHOWERS":
+    case "LIGHT_TO_MODERATE_RAIN":
+    case "RAIN":
+    case "LIGHT_RAIN":
+    case "DRIZZLE":
+      return "rain";
+    case "THUNDERSTORM":
+    case "THUNDERSHOWER":
+    case "LIGHT_THUNDERSTORM_RAIN":
+    case "SCATTERED_THUNDERSTORMS":
+    case "HEAVY_THUNDERSTORM":
+    case "HAIL":
+    case "HAIL_SHOWERS":
+      return "storm";
+    case "LIGHT_SNOW_SHOWERS":
+    case "CHANCE_OF_SNOW_SHOWERS":
+    case "SCATTERED_SNOW_SHOWERS":
+    case "SNOW_SHOWERS":
+    case "HEAVY_SNOW_SHOWERS":
+    case "LIGHT_TO_MODERATE_SNOW":
+    case "MODERATE_TO_HEAVY_SNOW":
+    case "SNOW":
+    case "LIGHT_SNOW":
+    case "HEAVY_SNOW":
+    case "SNOWSTORM":
+    case "HEAVY_SNOW_STORM":
+    case "BLOWING_SNOW":
+    case "SLEET":
+    case "FREEZING_RAIN":
+    case "ICE_PELLETS":
+      return "snow";
+    default:
+      if (type.includes("THUNDER") || type.includes("STORM")) return "storm";
+      if (type.includes("SNOW") || type.includes("ICE")) return "snow";
+      if (type.includes("HEAVY_RAIN")) return "heavy_rain";
+      if (type.includes("RAIN") || type.includes("SHOWER") || type.includes("DRIZZLE")) {
+        return "rain";
+      }
+      if (type.includes("FOG") || type.includes("HAZE") || type.includes("MIST")) {
+        return "fog";
+      }
+      if (type.includes("CLOUD")) return "cloudy";
+      if (type.includes("CLEAR") || type.includes("SUN")) return "clear";
+      return "unknown";
+  }
+}
+
 /** Majority vote for condition strings. */
 export function majorityCondition(
   conditions: WeatherCondition[],

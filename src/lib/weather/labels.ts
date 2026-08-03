@@ -5,6 +5,7 @@ export const SOURCE_LABELS: Record<WeatherSourceName, string> = {
   openweather: "OpenWeather",
   tomorrow: "Tomorrow.io",
   weatherapi: "WeatherAPI",
+  google: "Google Weather",
 };
 
 export const SOURCE_ORDER: WeatherSourceName[] = [
@@ -12,4 +13,5 @@ export const SOURCE_ORDER: WeatherSourceName[] = [
   "openweather",
   "tomorrow",
   "weatherapi",
+  "google",
 ];
