@@ -1,5 +1,6 @@
 import { FestivalList } from "@/components/FestivalList";
 import type { FestivalListItem } from "@/components/FestivalList";
+import { SiteClock } from "@/components/SiteClock";
 import { listFestivals } from "@/data/festival-repository";
 import { mapPool } from "@/lib/map-pool";
 import {
@@ -73,7 +74,10 @@ export default async function HomePage() {
 
   return (
     <main>
-      <h1 className="brand">Festcheck</h1>
+      <header className="site-header">
+        <h1 className="brand">Festcheck</h1>
+        <SiteClock />
+      </header>
       <p className="tagline">
         Live conditions and festival-weekend forecasts, blended from multiple
         weather sources.
