@@ -1,36 +1,95 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Festival Weather
 
-## Getting Started
+Clean, simple current weather for festival sites — blended from multiple APIs for a clearer picture.
 
-First, run the development server:
+## Stack
+
+- Next.js (App Router) + TypeScript + Tailwind CSS
+- Festivals in Neon Postgres via Drizzle ORM, seeded from `src/data/festivals.ts`
+- Weather aggregation via `/api/weather` (and server-side on festival pages)
+
+## Weather sources
+
+
+| Provider                                  | Key required          | Notes            |
+| ----------------------------------------- | --------------------- | ---------------- |
+| [Open-Meteo](https://open-meteo.com)      | No                    | Always used      |
+| [OpenWeather](https://openweathermap.org) | `OPENWEATHER_API_KEY` | Current weather  |
+| [Tomorrow.io](https://www.tomorrow.io)    | `TOMORROW_API_KEY`    | Realtime weather |
+| [WeatherAPI](https://www.weatherapi.com)  | `WEATHERAPI_API_KEY`  | Current weather  |
+
+
+The app works with **Open-Meteo alone**. Extra keys raise confidence when sources agree.
+
+## Caching
+
+Weather responses are cached **in memory** (works in `next dev` and production) so refreshes don’t re-hit every API.
+
+- Default TTL: **30 minutes**
+- Override with `WEATHER_CACHE_TTL_SECONDS` (e.g. `3600` while testing)
+- Set `0` to disable
+- Restart the dev server clears the cache (process memory)
+
+Providers also set Next.js `fetch` revalidate tags (5–30 min); the in-memory layer is what protects you during local testing.
+
+## Setup
+
+```bash
+npm install
+cp .env.local.example .env.local
+# add OPENWEATHER_API_KEY, TOMORROW_API_KEY, WEATHERAPI_API_KEY
+# optional: WEATHER_CACHE_TTL_SECONDS=3600
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000).
+
+## Database
+
+Festivals live in Postgres (Neon) and are read through `src/data/festival-repository.ts`. Without `DATABASE_URL` the app logs a warning and serves the curated list in `src/data/festivals.ts`, so it runs before the database exists.
+
+```bash
+# 1. Create a project at https://neon.tech and copy the connection string
+#    into DATABASE_URL in .env.local
+# 2. Create the table
+npm run db:migrate
+# 3. Load the curated festivals (safe to re-run — it upserts by id)
+npm run db:seed
+```
+
+| Script              | What it does                                        |
+| ------------------- | --------------------------------------------------- |
+| `npm run db:migrate`| Applies SQL migrations from `drizzle/`              |
+| `npm run db:generate`| Regenerates migration SQL after editing the schema |
+| `npm run db:push`   | Pushes the schema straight to the DB (quick dev use) |
+| `npm run db:seed`   | Upserts `festivalSeed` into the `festivals` table   |
+| `npm run db:studio` | Opens Drizzle Studio to browse rows                 |
+
+Schema lives in `src/db/schema.ts`: slug `id` primary key, `name`, `location`, `country`, `lat`/`lon`, `start_date`/`end_date`, timestamps, plus indexes on start date and country. Search filtering runs in SQL (`ilike`), so the table can grow worldwide without shipping every row to the client.
+
+## Festivals
+
+Edit `src/data/festivals.ts`, then re-run `npm run db:seed`. Each festival needs:
+
+- `id` — URL slug  
+- `name`, `location`, `country` (ISO 3166-1 alpha-2, e.g. `GB`)  
+- `lat`, `lon`  
+- `startDate`, `endDate` — `YYYY-MM-DD` (shown on the page; weather uses lat/lon)
+
+## API
+
+`GET /api/weather?lat=&lon=`
+
+Returns consensus **current** conditions plus per-source payloads.
+
+## Scripts
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm run build
+npm run start
+npm run lint
+npm run db:migrate   # see Database above
+npm run db:seed
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
