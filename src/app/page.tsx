@@ -75,7 +75,7 @@ export default async function HomePage() {
   return (
     <main>
       <header className="site-header">
-        <h1 className="brand">Festcheck</h1>
+        <h1 className="brand">FestCheck</h1>
         <SiteClock />
       </header>
       <p className="tagline">

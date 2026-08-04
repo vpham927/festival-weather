@@ -8,7 +8,7 @@ const openSans = Open_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Mud'n'Bass",
+  title: "FestCheck",
   description:
     "Current weather at festival sites from multiple sources, blended for a clearer picture.",
 };
