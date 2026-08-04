@@ -220,6 +220,9 @@ a {
 }
 
 .festival-name {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
   margin: 0;
   font-family: var(--font-body), system-ui, sans-serif;
   font-size: 1.35rem;
@@ -227,6 +230,34 @@ a {
   letter-spacing: -0.01em;
   line-height: 1.15;
   transition: letter-spacing 0.35s ease;
+}
+
+.festival-favicon {
+  flex-shrink: 0;
+  object-fit: contain;
+  border-radius: 0.2rem;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.festival-favicon--sm {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.festival-favicon--md {
+  width: 1.55rem;
+  height: 1.55rem;
+}
+
+.festival-favicon--fallback {
+  display: inline-block;
+  background: var(--accent-soft);
+  border: 1px solid var(--line);
+}
+
+.festival-overlay-title .festival-favicon--md {
+  width: 2rem;
+  height: 2rem;
 }
 
 .festival-meta {
@@ -383,6 +414,9 @@ a {
 }
 
 .festival-overlay-title {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
   margin-bottom: 0.35rem;
   animation: none;
 }

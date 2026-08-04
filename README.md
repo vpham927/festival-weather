@@ -66,7 +66,7 @@ npm run db:seed
 | `npm run db:seed`   | Upserts `festivalSeed` into the `festivals` table   |
 | `npm run db:studio` | Opens Drizzle Studio to browse rows                 |
 
-Schema lives in `src/db/schema.ts`: slug `id` primary key, `name`, `location`, `country`, `lat`/`lon`, `start_date`/`end_date`, timestamps, plus indexes on start date and country. Search filtering runs in SQL (`ilike`), so the table can grow worldwide without shipping every row to the client.
+Schema lives in `src/db/schema.ts`: slug `id` primary key, `name`, `location`, `country`, `lat`/`lon`, `start_date`/`end_date`, `website`, `icon_url`, timestamps, plus indexes on start date and country. Search filtering runs in SQL (`ilike`), so the table can grow worldwide without shipping every row to the client.
 
 ## Festivals
 
@@ -75,7 +75,9 @@ Edit `src/data/festivals.ts`, then re-run `npm run db:seed`. Each festival needs
 - `id` — URL slug  
 - `name`, `location`, `country` (ISO 3166-1 alpha-2, e.g. `GB`)  
 - `lat`, `lon`  
-- `startDate`, `endDate` — `YYYY-MM-DD` (shown on the page; weather uses lat/lon)
+- `startDate`, `endDate` — `YYYY-MM-DD` (shown on the page; weather uses lat/lon)  
+- `website` — official site URL  
+- `iconUrl` — icon/favicon image URL (seed defaults from the website host if omitted)
 
 ## API
 

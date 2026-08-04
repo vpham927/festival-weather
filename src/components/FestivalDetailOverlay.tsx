@@ -2,6 +2,7 @@
 
 import { ConfidenceNote } from "@/components/ConfidenceNote";
 import { CurrentWeather } from "@/components/CurrentWeather";
+import { FestivalFavicon } from "@/components/FestivalFavicon";
 import { FestivalForecast } from "@/components/FestivalForecast";
 import { SourceWeatherGrid } from "@/components/SourceWeatherGrid";
 import { WeatherIcon } from "@/components/WeatherIcon";
@@ -121,7 +122,13 @@ export function FestivalDetailOverlay({ festival, onClose }: Props) {
               id={titleId}
               className="festival-hero-name festival-overlay-title"
             >
-              {festival.name}
+              <FestivalFavicon
+                iconUrl={festival.iconUrl}
+                website={festival.website}
+                name={festival.name}
+                size="md"
+              />
+              <span>{festival.name}</span>
             </h2>
             <p className="festival-hero-meta festival-overlay-meta">
               {formatDateRange(festival.startDate, festival.endDate)}

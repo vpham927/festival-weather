@@ -2,6 +2,7 @@
 
 import type { Festival } from "@/data/festivals";
 import { FestivalDetailOverlay } from "@/components/FestivalDetailOverlay";
+import { FestivalFavicon } from "@/components/FestivalFavicon";
 import { NoForecastIcon, WeatherIcon } from "@/components/WeatherIcon";
 import { conditionLabel, formatDateRange } from "@/lib/format";
 import type {
@@ -89,7 +90,14 @@ export function FestivalList({ items }: Props) {
                 onClick={() => setSelected(f)}
               >
                 <div className="festival-card-top">
-                  <h2 className="festival-name">{f.name}</h2>
+                  <h2 className="festival-name">
+                    <FestivalFavicon
+                      iconUrl={f.iconUrl}
+                      website={f.website}
+                      name={f.name}
+                    />
+                    <span>{f.name}</span>
+                  </h2>
                   <p className="festival-meta">
                     <span>{formatDateRange(f.startDate, f.endDate)}</span>
                     <span className="festival-dot" aria-hidden>

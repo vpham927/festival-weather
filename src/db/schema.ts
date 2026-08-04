@@ -20,6 +20,9 @@ export const festivals = pgTable(
     lon: doublePrecision("lon").notNull(),
     startDate: date("start_date").notNull(),
     endDate: date("end_date").notNull(),
+    website: text("website").notNull().default(""),
+    /** Favicon or brand icon URL shown next to the festival name. */
+    iconUrl: text("icon_url").notNull().default(""),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

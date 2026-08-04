@@ -28,6 +28,8 @@ await db
       lon: sql`excluded.lon`,
       startDate: sql`excluded.start_date`,
       endDate: sql`excluded.end_date`,
+      website: sql`excluded.website`,
+      iconUrl: sql`excluded.icon_url`,
       updatedAt: sql`now()`,
     },
   });

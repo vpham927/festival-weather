@@ -1,4 +1,4 @@
-import { asc, eq, ilike, or } from "drizzle-orm";
+import { and, asc, eq, gte, ilike, or } from "drizzle-orm";
 import { cache } from "react";
 import { festivalSeed, type Festival } from "@/data/festivals";
 import { getDb } from "@/db/client";
@@ -15,6 +15,15 @@ function warnNoDatabase(): void {
   );
 }
 
+function todayIso(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+/** Still on or not yet started — hide festivals that have already finished. */
+function isActiveOrUpcoming(festival: Festival, today = todayIso()): boolean {
+  return festival.endDate >= today;
+}
+
 function toFestival(row: FestivalRow): Festival {
   return {
     id: row.id,
@@ -25,13 +34,15 @@ function toFestival(row: FestivalRow): Festival {
     lon: row.lon,
     startDate: row.startDate,
     endDate: row.endDate,
+    website: row.website,
+    iconUrl: row.iconUrl,
   };
 }
 
 function seedSorted(): Festival[] {
-  return [...festivalSeed].sort((a, b) =>
-    a.startDate.localeCompare(b.startDate),
-  );
+  return [...festivalSeed]
+    .filter((f) => isActiveOrUpcoming(f))
+    .sort((a, b) => a.startDate.localeCompare(b.startDate));
 }
 
 function seedFiltered(query?: string): Festival[] {
@@ -45,8 +56,9 @@ function seedFiltered(query?: string): Festival[] {
 }
 
 /**
- * Festivals ordered by start date. Filtering happens in SQL so the list can grow
- * worldwide without shipping every row to the client.
+ * Festivals ordered by start date. Only upcoming and currently-running events
+ * are returned. Filtering happens in SQL so the list can grow worldwide without
+ * shipping every row to the client.
  */
 export const listFestivals = cache(
   async (query?: string): Promise<Festival[]> => {
@@ -57,6 +69,8 @@ export const listFestivals = cache(
     }
 
     const q = query?.trim();
+    const today = todayIso();
+    const active = gte(festivalsTable.endDate, today);
 
     try {
       const rows = await (q
@@ -64,15 +78,19 @@ export const listFestivals = cache(
             .select()
             .from(festivalsTable)
             .where(
-              or(
-                ilike(festivalsTable.name, `%${q}%`),
-                ilike(festivalsTable.location, `%${q}%`),
+              and(
+                active,
+                or(
+                  ilike(festivalsTable.name, `%${q}%`),
+                  ilike(festivalsTable.location, `%${q}%`),
+                ),
               ),
             )
             .orderBy(asc(festivalsTable.startDate))
         : db
             .select()
             .from(festivalsTable)
+            .where(active)
             .orderBy(asc(festivalsTable.startDate)));
 
       return rows.map(toFestival);
