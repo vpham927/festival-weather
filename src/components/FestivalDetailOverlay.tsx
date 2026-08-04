@@ -4,7 +4,7 @@ import { ConfidenceNote } from "@/components/ConfidenceNote";
 import { CurrentWeather } from "@/components/CurrentWeather";
 import { FestivalFavicon } from "@/components/FestivalFavicon";
 import { FestivalForecast } from "@/components/FestivalForecast";
-import { SourceWeatherGrid } from "@/components/SourceWeatherGrid";
+import { SourceForecastGrid } from "@/components/SourceForecastGrid";
 import { WeatherIcon } from "@/components/WeatherIcon";
 import type { Festival } from "@/data/festivals";
 import {
@@ -192,12 +192,21 @@ export function FestivalDetailOverlay({ festival, onClose }: Props) {
             </>
           ) : null}
 
-          {!loading && weather ? (
+          {!loading && forecast ? (
             <>
               <h3 className="section-label section-label--spaced">By source</h3>
-              <SourceWeatherGrid
-                sources={weather.sources}
-                sourcesFailed={weather.consensus.sourcesFailed}
+              <SourceForecastGrid
+                sources={forecast.sources}
+                sourcesFailed={forecast.consensus.sourcesFailed}
+                festivalName={festival.name}
+                dateRangeLabel={formatDateRange(
+                  festival.startDate,
+                  festival.endDate,
+                )}
+                totalDays={remainingFestivalDays(
+                  festival.startDate,
+                  festival.endDate,
+                )}
               />
             </>
           ) : null}

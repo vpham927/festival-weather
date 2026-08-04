@@ -820,14 +820,59 @@ a {
   transition: transform 0.3s ease, background 0.3s ease;
 }
 
-.source-panel:hover {
+.source-panel--button {
+  display: block;
+  width: 100%;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  border-left: none;
+  border-right: none;
+  border-bottom: none;
+}
+
+.source-panel:hover,
+.source-panel--button:hover,
+.source-panel--button:focus-visible {
   transform: translateY(-3px);
   background: var(--surface-hover);
+  outline: none;
+}
+
+.source-panel--button:focus-visible {
+  box-shadow: 0 0 0 2px var(--accent);
 }
 
 .source-panel--failed {
   border-top-color: rgba(231, 240, 236, 0.22);
   opacity: 0.75;
+}
+
+.source-panel-hint {
+  margin: 0.75rem 0 0;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.source-forecast-overlay {
+  z-index: 90;
+}
+
+.source-forecast-panel {
+  width: min(920px, 100%);
+  height: min(88dvh, 100%);
+  max-height: 88dvh;
+}
+
+.source-forecast-title {
+  margin: 0 0 0.35rem;
+  font-size: clamp(1.6rem, 4vw, 2.2rem);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
 }
 
 .source-panel-header {
@@ -1072,6 +1117,8 @@ a {
   .festival-card-link:hover,
   .festival-card-link:focus-visible,
   .source-panel:hover,
+  .source-panel--button:hover,
+  .source-panel--button:focus-visible,
   .forecast-day:hover {
     transform: none;
   }

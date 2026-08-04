@@ -1,7 +1,7 @@
 import { ConfidenceNote } from "@/components/ConfidenceNote";
 import { CurrentWeather } from "@/components/CurrentWeather";
 import { FestivalForecast } from "@/components/FestivalForecast";
-import { SourceWeatherGrid } from "@/components/SourceWeatherGrid";
+import { SourceForecastGrid } from "@/components/SourceForecastGrid";
 import { getFestivalById } from "@/data/festival-repository";
 import { formatDateRange, remainingFestivalDays } from "@/lib/format";
 import { getAggregatedForecast, getAggregatedWeather } from "@/lib/weather";
@@ -104,12 +104,21 @@ export default async function FestivalPage({ params }: Props) {
         </>
       ) : null}
 
-      {weather ? (
+      {forecast ? (
         <>
           <h2 className="section-label section-label--spaced">By source</h2>
-          <SourceWeatherGrid
-            sources={weather.sources}
-            sourcesFailed={weather.consensus.sourcesFailed}
+          <SourceForecastGrid
+            sources={forecast.sources}
+            sourcesFailed={forecast.consensus.sourcesFailed}
+            festivalName={festival.name}
+            dateRangeLabel={formatDateRange(
+              festival.startDate,
+              festival.endDate,
+            )}
+            totalDays={remainingFestivalDays(
+              festival.startDate,
+              festival.endDate,
+            )}
           />
         </>
       ) : null}

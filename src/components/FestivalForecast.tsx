@@ -1,9 +1,9 @@
 import { WeatherIcon } from "@/components/WeatherIcon";
 import { conditionLabel } from "@/lib/format";
-import type { ConsensusDay } from "@/lib/weather/types";
+import type { ConsensusDay, DailyForecast } from "@/lib/weather/types";
 
 type Props = {
-  days: ConsensusDay[];
+  days: Array<DailyForecast | ConsensusDay>;
   /** Total nights the festival runs, used to flag partial coverage. */
   totalDays?: number;
 };
