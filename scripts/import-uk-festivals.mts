@@ -57,6 +57,8 @@ export type GeneratedFestival = {
   startDate: string;
   endDate: string;
   website: string;
+  /** Original TripSapien event URL (may be a listing site). */
+  listingUrl: string;
   source: "tripsapien";
   category: string;
 };
@@ -128,6 +130,16 @@ function cleanWebsite(url: string): string {
   try {
     const parsed = new URL(url);
     if (parsed.pathname.includes("Special:Search")) return "";
+    const host = parsed.hostname.toLowerCase();
+    if (
+      host.includes("musicfestivalwizard") ||
+      host.includes("festagent.") ||
+      host.includes("festivalfinder.") ||
+      host.endsWith("wikipedia.org") ||
+      host.includes("artforum.com")
+    ) {
+      return "";
+    }
     return parsed.toString();
   } catch {
     return "";
@@ -267,6 +279,7 @@ for (const row of candidates) {
     startDate: row.start_date,
     endDate: row.end_date,
     website: cleanWebsite(row.event_url),
+    listingUrl: row.event_url?.trim() || "",
     source: "tripsapien",
     category: row.category || row.event_type || "festival",
   });
@@ -304,6 +317,7 @@ export type GeneratedFestival = {
   startDate: string;
   endDate: string;
   website: string;
+  listingUrl: string;
   source: "tripsapien";
   category: string;
 };

@@ -1,6 +1,7 @@
 "use client";
 
 import { iconUrlFromWebsite } from "@/data/festivals";
+import { isAggregatorWebsite, officialWebsite } from "@/data/festival-websites";
 import { useState } from "react";
 
 type Props = {
@@ -10,6 +11,22 @@ type Props = {
   size?: "sm" | "md";
 };
 
+function isAggregatorFavicon(iconUrl: string): boolean {
+  try {
+    const url = new URL(iconUrl);
+    if (
+      !url.hostname.includes("google.") ||
+      !url.pathname.includes("favicons")
+    ) {
+      return false;
+    }
+    const domain = url.searchParams.get("domain") ?? "";
+    return Boolean(domain) && isAggregatorWebsite(`https://${domain}/`);
+  } catch {
+    return false;
+  }
+}
+
 export function FestivalFavicon({
   name,
   iconUrl,
@@ -18,10 +35,12 @@ export function FestivalFavicon({
 }: Props) {
   const [failed, setFailed] = useState(false);
   const px = size === "sm" ? 32 : 64;
-  const src =
-    iconUrl?.trim() ||
-    (website ? iconUrlFromWebsite(website, px) : "") ||
-    null;
+  const fromSite = website
+    ? iconUrlFromWebsite(officialWebsite(website), px)
+    : "";
+  const stored =
+    iconUrl?.trim() && !isAggregatorFavicon(iconUrl) ? iconUrl.trim() : "";
+  const src = fromSite || stored || null;
 
   if (!src || failed) {
     return (

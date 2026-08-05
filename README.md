@@ -65,6 +65,7 @@ npm run db:seed
 | `npm run db:push`   | Pushes the schema straight to the DB (quick dev use) |
 | `npm run db:seed`   | Upserts `festivalSeed` into the `festivals` table   |
 | `npm run db:import-uk` | Regenerates UK rows from TripSapien + geocoding  |
+| `npm run db:enrich-websites` | Replaces listing URLs with Wikidata official sites |
 | `npm run db:studio` | Opens Drizzle Studio to browse rows                 |
 
 Schema lives in `src/db/schema.ts`: slug `id` primary key, `name`, `location`, `country`, `lat`/`lon`, `start_date`/`end_date`, `website`, `icon_url`, `category` (`music` | `film` | `food` | `other`), timestamps, plus indexes on start date, country, and category. Search filtering runs in SQL (`ilike`), so the table can grow worldwide without shipping every row to the client.
@@ -76,7 +77,9 @@ The seed list is the UK slice of the [TripSapien festival calendar](https://gith
 ```bash
 # Refresh generated UK rows (writes src/data/uk-festivals.generated.ts)
 npm run db:import-uk
-# Upsert into Neon
+# Resolve official websites so favicons come from real festival domains
+# (Wikidata → listing page → domain probe), then upsert into Neon
+npm run db:enrich-websites
 npm run db:seed
 ```
 

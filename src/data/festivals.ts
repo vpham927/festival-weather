@@ -1,9 +1,11 @@
+import { generatedUkFestivals } from "./uk-festivals.generated.ts";
+import { FESTIVAL_WEBSITE_OVERRIDES } from "./festival-website-overrides.ts";
+import { officialWebsite } from "./festival-websites.ts";
 import {
   DEFAULT_FESTIVAL_CATEGORY,
   normalizeFestivalCategory,
   type FestivalCategory,
 } from "./festival-categories.ts";
-import { generatedUkFestivals } from "./uk-festivals.generated.ts";
 
 export type Festival = {
   id: string;
@@ -25,8 +27,10 @@ export type { FestivalCategory };
 
 /** Default icon URL from a festival website host (Google favicon service). */
 export function iconUrlFromWebsite(website: string, size = 64): string {
+  const official = officialWebsite(website);
+  if (!official) return "";
   try {
-    const host = new URL(website).hostname;
+    const host = new URL(official).hostname;
     return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(host)}&sz=${size}`;
   } catch {
     return "";
@@ -39,10 +43,12 @@ function festival(
     category?: FestivalCategory;
   },
 ): Festival {
+  const website = officialWebsite(partial.website);
   return {
     ...partial,
+    website,
     category: partial.category ?? DEFAULT_FESTIVAL_CATEGORY,
-    iconUrl: partial.iconUrl ?? iconUrlFromWebsite(partial.website),
+    iconUrl: partial.iconUrl ?? iconUrlFromWebsite(website),
   };
 }
 
@@ -282,7 +288,7 @@ function mergeFestivalSeed(
         lon: row.lon,
         startDate: row.startDate,
         endDate: row.endDate,
-        website: row.website,
+        website: FESTIVAL_WEBSITE_OVERRIDES[row.id] ?? row.website,
         category: normalizeFestivalCategory(row.category),
       }),
     );
