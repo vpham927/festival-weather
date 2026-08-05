@@ -8,6 +8,7 @@ import { SourceForecastGrid } from "@/components/SourceForecastGrid";
 import { WeatherIcon } from "@/components/WeatherIcon";
 import type { Festival } from "@/data/festivals";
 import {
+  festivalDisplayName,
   formatDateRange,
   remainingFestivalDays,
 } from "@/lib/format";
@@ -125,10 +126,10 @@ export function FestivalDetailOverlay({ festival, onClose }: Props) {
               <FestivalFavicon
                 iconUrl={festival.iconUrl}
                 website={festival.website}
-                name={festival.name}
+                name={festivalDisplayName(festival.name)}
                 size="md"
               />
-              <span>{festival.name}</span>
+              <span>{festivalDisplayName(festival.name)}</span>
             </h2>
             <p className="festival-hero-meta festival-overlay-meta">
               {formatDateRange(festival.startDate, festival.endDate)}
@@ -198,7 +199,7 @@ export function FestivalDetailOverlay({ festival, onClose }: Props) {
               <SourceForecastGrid
                 sources={forecast.sources}
                 sourcesFailed={forecast.consensus.sourcesFailed}
-                festivalName={festival.name}
+                festivalName={festivalDisplayName(festival.name)}
                 dateRangeLabel={formatDateRange(
                   festival.startDate,
                   festival.endDate,

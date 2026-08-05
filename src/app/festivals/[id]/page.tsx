@@ -3,7 +3,7 @@ import { CurrentWeather } from "@/components/CurrentWeather";
 import { FestivalForecast } from "@/components/FestivalForecast";
 import { SourceForecastGrid } from "@/components/SourceForecastGrid";
 import { getFestivalById } from "@/data/festival-repository";
-import { formatDateRange, remainingFestivalDays } from "@/lib/format";
+import { formatDateRange, festivalDisplayName, remainingFestivalDays } from "@/lib/format";
 import { getAggregatedForecast, getAggregatedWeather } from "@/lib/weather";
 import type { ForecastResponse, WeatherResponse } from "@/lib/weather/types";
 import Link from "next/link";
@@ -20,8 +20,8 @@ export async function generateMetadata({ params }: Props) {
   const festival = await getFestivalById(id);
   if (!festival) return { title: "Festival not found" };
   return {
-    title: `${festival.name} · Festival Weather`,
-    description: `Current weather at ${festival.name} in ${festival.location}.`,
+    title: `${festivalDisplayName(festival.name)} · Festival Weather`,
+    description: `Current weather at ${festivalDisplayName(festival.name)} in ${festival.location}.`,
   };
 }
 
@@ -56,7 +56,7 @@ export default async function FestivalPage({ params }: Props) {
       <Link href="/" className="back-link">
         ← All festivals
       </Link>
-      <h1 className="festival-hero-name">{festival.name}</h1>
+      <h1 className="festival-hero-name">{festivalDisplayName(festival.name)}</h1>
       <p className="festival-hero-meta">
         {formatDateRange(festival.startDate, festival.endDate)}
         <span aria-hidden> · </span>
@@ -110,7 +110,7 @@ export default async function FestivalPage({ params }: Props) {
           <SourceForecastGrid
             sources={forecast.sources}
             sourcesFailed={forecast.consensus.sourcesFailed}
-            festivalName={festival.name}
+            festivalName={festivalDisplayName(festival.name)}
             dateRangeLabel={formatDateRange(
               festival.startDate,
               festival.endDate,

@@ -15,6 +15,11 @@ export function formatDateRange(start: string, end: string): string {
   return `${s.toLocaleDateString("en-GB", opts)} – ${e.toLocaleDateString("en-GB", { ...opts, year: "numeric" })}`;
 }
 
+/** Drop a trailing year from titles like "Wilderness Festival 2026". */
+export function festivalDisplayName(name: string): string {
+  return name.replace(/\s+20\d{2}\s*$/, "").trim();
+}
+
 export function conditionLabel(condition: string): string {
   const labels: Record<string, string> = {
     clear: "Clear",

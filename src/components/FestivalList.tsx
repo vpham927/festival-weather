@@ -9,7 +9,7 @@ import {
 import { FestivalDetailOverlay } from "@/components/FestivalDetailOverlay";
 import { FestivalFavicon } from "@/components/FestivalFavicon";
 import { NoForecastIcon, WeatherIcon } from "@/components/WeatherIcon";
-import { conditionLabel, formatDateRange } from "@/lib/format";
+import { conditionLabel, festivalDisplayName, formatDateRange } from "@/lib/format";
 import type {
   Confidence,
   ForecastSummary,
@@ -125,9 +125,9 @@ export function FestivalList({ items, category }: Props) {
                     <FestivalFavicon
                       iconUrl={f.iconUrl}
                       website={f.website}
-                      name={f.name}
+                      name={festivalDisplayName(f.name)}
                     />
-                    <span>{f.name}</span>
+                    <span>{festivalDisplayName(f.name)}</span>
                   </h2>
                   <p className="festival-meta">
                     <span>{formatDateRange(f.startDate, f.endDate)}</span>
