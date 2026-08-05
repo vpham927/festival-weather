@@ -82,7 +82,7 @@ export default async function HomePage({ searchParams }: Props) {
   return (
     <main>
       <header className="site-header">
-        <h1 className="brand">FestCheck</h1>
+        <h1 className="brand">Drizzle.live</h1>
         <SiteClock />
       </header>
       <p className="tagline">

@@ -8,7 +8,7 @@ const openSans = Open_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "FestCheck",
+  title: "Drizzle.live",
   description:
     "Current weather at festival sites from multiple sources, blended for a clearer picture.",
 };
