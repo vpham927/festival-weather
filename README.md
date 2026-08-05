@@ -64,13 +64,23 @@ npm run db:seed
 | `npm run db:generate`| Regenerates migration SQL after editing the schema |
 | `npm run db:push`   | Pushes the schema straight to the DB (quick dev use) |
 | `npm run db:seed`   | Upserts `festivalSeed` into the `festivals` table   |
+| `npm run db:import-uk` | Regenerates UK rows from TripSapien + geocoding  |
 | `npm run db:studio` | Opens Drizzle Studio to browse rows                 |
 
 Schema lives in `src/db/schema.ts`: slug `id` primary key, `name`, `location`, `country`, `lat`/`lon`, `start_date`/`end_date`, `website`, `icon_url`, timestamps, plus indexes on start date and country. Search filtering runs in SQL (`ilike`), so the table can grow worldwide without shipping every row to the client.
 
 ## Festivals
 
-Edit `src/data/festivals.ts`, then re-run `npm run db:seed`. Each festival needs:
+The seed list is the UK slice of the [TripSapien festival calendar](https://github.com/forrestmill-cmd/tripsapien-public-data) (CC BY 4.0), geocoded to city centres, plus hand-curated venue overrides in `curatedFestivals`.
+
+```bash
+# Refresh generated UK rows (writes src/data/uk-festivals.generated.ts)
+npm run db:import-uk
+# Upsert into Neon
+npm run db:seed
+```
+
+To tweak a known festival (precise venue coords / official site), edit `curatedFestivals` in `src/data/festivals.ts`, then re-run `npm run db:seed`. Each festival needs:
 
 - `id` — URL slug  
 - `name`, `location`, `country` (ISO 3166-1 alpha-2, e.g. `GB`)  

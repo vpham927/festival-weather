@@ -1,3 +1,5 @@
+import { generatedUkFestivals } from "./uk-festivals.generated.ts";
+
 export type Festival = {
   id: string;
   name: string;
@@ -32,11 +34,24 @@ function festival(
   };
 }
 
+function normalizeName(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/&/g, " and ")
+    .replace(/\b20\d{2}\b/g, "")
+    .replace(
+      /\b(festival|open air|fair|dorset|international|music)\b/g,
+      "",
+    )
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
 /**
- * Curated UK list. Seeds the database and doubles as the fallback when no
- * DATABASE_URL is configured.
+ * Hand-curated UK festivals with precise venue coordinates and official
+ * websites. These win over generated rows when names match.
  */
-export const festivalSeed: Festival[] = [
+export const curatedFestivals: Festival[] = [
   festival({
     id: "camp-bestival",
     name: "Camp Bestival",
@@ -214,3 +229,76 @@ export const festivalSeed: Festival[] = [
     website: "https://www.wirelessfestival.co.uk",
   }),
 ];
+
+type GeneratedRow = {
+  id: string;
+  name: string;
+  location: string;
+  country: string;
+  lat: number;
+  lon: number;
+  startDate: string;
+  endDate: string;
+  website: string;
+};
+
+function mergeFestivalSeed(
+  curated: Festival[],
+  generated: GeneratedRow[],
+): Festival[] {
+  const curatedByNorm = new Map(
+    curated.map((f) => [normalizeName(f.name), f] as const),
+  );
+  const usedCurated = new Set<string>();
+  const merged: Festival[] = [];
+
+  for (const row of generated) {
+    const match = curatedByNorm.get(normalizeName(row.name));
+    if (match) {
+      usedCurated.add(match.id);
+      merged.push(match);
+      continue;
+    }
+    merged.push(
+      festival({
+        id: row.id,
+        name: row.name,
+        location: row.location,
+        country: row.country,
+        lat: row.lat,
+        lon: row.lon,
+        startDate: row.startDate,
+        endDate: row.endDate,
+        website: row.website,
+      }),
+    );
+  }
+
+  for (const f of curated) {
+    if (!usedCurated.has(f.id)) merged.push(f);
+  }
+
+  const byId = new Map<string, Festival>();
+  for (const f of merged) {
+    // Prefer curated when duplicate ids collide after merge.
+    if (!byId.has(f.id) || curated.some((c) => c.id === f.id)) {
+      byId.set(f.id, f);
+    }
+  }
+
+  return [...byId.values()].sort((a, b) =>
+    a.startDate === b.startDate
+      ? a.name.localeCompare(b.name)
+      : a.startDate.localeCompare(b.startDate),
+  );
+}
+
+/**
+ * Full UK seed: TripSapien calendar (CC BY 4.0) plus curated overrides.
+ * Seeds the database and doubles as the fallback when no DATABASE_URL
+ * is configured.
+ */
+export const festivalSeed: Festival[] = mergeFestivalSeed(
+  curatedFestivals,
+  generatedUkFestivals,
+);
