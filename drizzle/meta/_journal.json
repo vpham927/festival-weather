@@ -15,6 +15,13 @@
       "when": 1785872041602,
       "tag": "0001_dusty_vampiro",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1785960883718,
+      "tag": "0002_thick_tusk",
+      "breakpoints": true
     }
   ]
 }

@@ -67,7 +67,7 @@ npm run db:seed
 | `npm run db:import-uk` | Regenerates UK rows from TripSapien + geocoding  |
 | `npm run db:studio` | Opens Drizzle Studio to browse rows                 |
 
-Schema lives in `src/db/schema.ts`: slug `id` primary key, `name`, `location`, `country`, `lat`/`lon`, `start_date`/`end_date`, `website`, `icon_url`, timestamps, plus indexes on start date and country. Search filtering runs in SQL (`ilike`), so the table can grow worldwide without shipping every row to the client.
+Schema lives in `src/db/schema.ts`: slug `id` primary key, `name`, `location`, `country`, `lat`/`lon`, `start_date`/`end_date`, `website`, `icon_url`, `category` (`music` | `film` | `food` | `other`), timestamps, plus indexes on start date, country, and category. Search filtering runs in SQL (`ilike`), so the table can grow worldwide without shipping every row to the client.
 
 ## Festivals
 

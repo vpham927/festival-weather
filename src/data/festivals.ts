@@ -1,3 +1,8 @@
+import {
+  DEFAULT_FESTIVAL_CATEGORY,
+  normalizeFestivalCategory,
+  type FestivalCategory,
+} from "./festival-categories.ts";
 import { generatedUkFestivals } from "./uk-festivals.generated.ts";
 
 export type Festival = {
@@ -13,7 +18,10 @@ export type Festival = {
   website: string;
   /** Icon / favicon URL shown next to the name. */
   iconUrl: string;
+  category: FestivalCategory;
 };
+
+export type { FestivalCategory };
 
 /** Default icon URL from a festival website host (Google favicon service). */
 export function iconUrlFromWebsite(website: string, size = 64): string {
@@ -26,10 +34,14 @@ export function iconUrlFromWebsite(website: string, size = 64): string {
 }
 
 function festival(
-  partial: Omit<Festival, "iconUrl"> & { iconUrl?: string },
+  partial: Omit<Festival, "iconUrl" | "category"> & {
+    iconUrl?: string;
+    category?: FestivalCategory;
+  },
 ): Festival {
   return {
     ...partial,
+    category: partial.category ?? DEFAULT_FESTIVAL_CATEGORY,
     iconUrl: partial.iconUrl ?? iconUrlFromWebsite(partial.website),
   };
 }
@@ -70,8 +82,8 @@ export const curatedFestivals: Festival[] = [
     country: "GB",
     lat: 51.8767,
     lon: -1.4906,
-    startDate: "2026-08-06",
-    endDate: "2026-08-09",
+    startDate: "2026-07-30",
+    endDate: "2026-08-02",
     website: "https://www.wildernessfestival.com",
   }),
   festival({
@@ -240,6 +252,7 @@ type GeneratedRow = {
   startDate: string;
   endDate: string;
   website: string;
+  category: string;
 };
 
 function mergeFestivalSeed(
@@ -270,6 +283,7 @@ function mergeFestivalSeed(
         startDate: row.startDate,
         endDate: row.endDate,
         website: row.website,
+        category: normalizeFestivalCategory(row.category),
       }),
     );
   }

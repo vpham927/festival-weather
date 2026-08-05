@@ -1,6 +1,7 @@
 import { FestivalList } from "@/components/FestivalList";
 import type { FestivalListItem } from "@/components/FestivalList";
 import { SiteClock } from "@/components/SiteClock";
+import { parseFestivalCategory } from "@/data/festival-categories";
 import { listFestivals } from "@/data/festival-repository";
 import { mapPool } from "@/lib/map-pool";
 import {
@@ -14,8 +15,14 @@ export const dynamic = "force-dynamic";
 /** Keep home-page upstream calls gentle — free weather tiers rate-limit hard on Vercel. */
 const HOME_WEATHER_CONCURRENCY = 2;
 
-export default async function HomePage() {
-  const festivals = await listFestivals();
+type Props = {
+  searchParams: Promise<{ category?: string }>;
+};
+
+export default async function HomePage({ searchParams }: Props) {
+  const params = await searchParams;
+  const category = parseFestivalCategory(params.category);
+  const festivals = await listFestivals(undefined, category);
 
   const weatherResults = await mapPool(
     festivals,
@@ -82,7 +89,7 @@ export default async function HomePage() {
         Live conditions and festival-weekend forecasts, blended from multiple
         weather sources.
       </p>
-      <FestivalList items={items} />
+      <FestivalList items={items} category={category} />
     </main>
   );
 }

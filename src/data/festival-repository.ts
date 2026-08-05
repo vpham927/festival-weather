@@ -1,5 +1,10 @@
 import { and, asc, eq, gte, ilike, or } from "drizzle-orm";
 import { cache } from "react";
+import {
+  DEFAULT_FESTIVAL_CATEGORY,
+  isFestivalCategory,
+  type FestivalCategory,
+} from "@/data/festival-categories";
 import { festivalSeed, type Festival } from "@/data/festivals";
 import { getDb } from "@/db/client";
 import { festivals as festivalsTable } from "@/db/schema";
@@ -24,6 +29,10 @@ function isActiveOrUpcoming(festival: Festival, today = todayIso()): boolean {
   return festival.endDate >= today;
 }
 
+function rowCategory(value: string): FestivalCategory {
+  return isFestivalCategory(value) ? value : DEFAULT_FESTIVAL_CATEGORY;
+}
+
 function toFestival(row: FestivalRow): Festival {
   return {
     id: row.id,
@@ -36,17 +45,18 @@ function toFestival(row: FestivalRow): Festival {
     endDate: row.endDate,
     website: row.website,
     iconUrl: row.iconUrl,
+    category: rowCategory(row.category),
   };
 }
 
-function seedSorted(): Festival[] {
+function seedSorted(category: FestivalCategory): Festival[] {
   return [...festivalSeed]
-    .filter((f) => isActiveOrUpcoming(f))
+    .filter((f) => isActiveOrUpcoming(f) && f.category === category)
     .sort((a, b) => a.startDate.localeCompare(b.startDate));
 }
 
-function seedFiltered(query?: string): Festival[] {
-  const sorted = seedSorted();
+function seedFiltered(category: FestivalCategory, query?: string): Festival[] {
+  const sorted = seedSorted(category);
   const q = query?.trim().toLowerCase();
   if (!q) return sorted;
   return sorted.filter(
@@ -61,16 +71,20 @@ function seedFiltered(query?: string): Festival[] {
  * shipping every row to the client.
  */
 export const listFestivals = cache(
-  async (query?: string): Promise<Festival[]> => {
+  async (
+    query?: string,
+    category: FestivalCategory = DEFAULT_FESTIVAL_CATEGORY,
+  ): Promise<Festival[]> => {
     const db = getDb();
     if (!db) {
       warnNoDatabase();
-      return seedFiltered(query);
+      return seedFiltered(category, query);
     }
 
     const q = query?.trim();
     const today = todayIso();
     const active = gte(festivalsTable.endDate, today);
+    const byCategory = eq(festivalsTable.category, category);
 
     try {
       const rows = await (q
@@ -80,6 +94,7 @@ export const listFestivals = cache(
             .where(
               and(
                 active,
+                byCategory,
                 or(
                   ilike(festivalsTable.name, `%${q}%`),
                   ilike(festivalsTable.location, `%${q}%`),
@@ -90,7 +105,7 @@ export const listFestivals = cache(
         : db
             .select()
             .from(festivalsTable)
-            .where(active)
+            .where(and(active, byCategory))
             .orderBy(asc(festivalsTable.startDate)));
 
       return rows.map(toFestival);
@@ -99,7 +114,7 @@ export const listFestivals = cache(
         "[festivals] Database query failed — falling back to the built-in list:",
         error,
       );
-      return seedFiltered(query);
+      return seedFiltered(category, query);
     }
   },
 );

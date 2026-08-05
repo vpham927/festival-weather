@@ -1,6 +1,11 @@
 "use client";
 
 import type { Festival } from "@/data/festivals";
+import {
+  FESTIVAL_CATEGORIES,
+  FESTIVAL_CATEGORY_LABELS,
+  type FestivalCategory,
+} from "@/data/festival-categories";
 import { FestivalDetailOverlay } from "@/components/FestivalDetailOverlay";
 import { FestivalFavicon } from "@/components/FestivalFavicon";
 import { NoForecastIcon, WeatherIcon } from "@/components/WeatherIcon";
@@ -10,6 +15,7 @@ import type {
   ForecastSummary,
   WeatherCondition,
 } from "@/lib/weather/types";
+import Link from "next/link";
 import {
   useMemo,
   useState,
@@ -32,9 +38,10 @@ export type FestivalListItem = {
 
 type Props = {
   items: FestivalListItem[];
+  category: FestivalCategory;
 };
 
-export function FestivalList({ items }: Props) {
+export function FestivalList({ items, category }: Props) {
   const [query, setQuery] = useState("");
   const [isPending, startTransition] = useTransition();
   const [selected, setSelected] = useState<Festival | null>(null);
@@ -51,6 +58,30 @@ export function FestivalList({ items }: Props) {
 
   return (
     <div className="festival-list">
+      <div
+        className="category-pills"
+        role="tablist"
+        aria-label="Festival category"
+      >
+        {FESTIVAL_CATEGORIES.map((value) => {
+          const selectedCategory = value === category;
+          const href =
+            value === "music" ? "/" : `/?category=${value}`;
+          return (
+            <Link
+              key={value}
+              href={href}
+              role="tab"
+              aria-selected={selectedCategory}
+              className={`category-pill${selectedCategory ? " is-active" : ""}`}
+              scroll={false}
+            >
+              {FESTIVAL_CATEGORY_LABELS[value]}
+            </Link>
+          );
+        })}
+      </div>
+
       <label className="search-label" htmlFor="festival-search">
         Search festivals
       </label>

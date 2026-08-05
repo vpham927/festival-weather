@@ -30,6 +30,7 @@ await db
       endDate: sql`excluded.end_date`,
       website: sql`excluded.website`,
       iconUrl: sql`excluded.icon_url`,
+      category: sql`excluded.category`,
       updatedAt: sql`now()`,
     },
   });

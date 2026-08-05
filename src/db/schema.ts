@@ -23,6 +23,8 @@ export const festivals = pgTable(
     website: text("website").notNull().default(""),
     /** Favicon or brand icon URL shown next to the festival name. */
     iconUrl: text("icon_url").notNull().default(""),
+    /** App category: music | film | food | other */
+    category: text("category").notNull().default("other"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -33,6 +35,7 @@ export const festivals = pgTable(
   (table) => [
     index("festivals_start_date_idx").on(table.startDate),
     index("festivals_country_idx").on(table.country),
+    index("festivals_category_idx").on(table.category),
   ],
 );
 
