@@ -1,5 +1,6 @@
 import { FestivalList } from "@/components/FestivalList";
 import type { FestivalListItem } from "@/components/FestivalList";
+import { BrandMark } from "@/components/BrandMark";
 import { SiteClock } from "@/components/SiteClock";
 import { parseFestivalCategory } from "@/data/festival-categories";
 import { listFestivals } from "@/data/festival-repository";
@@ -9,8 +10,6 @@ import {
   getAggregatedWeather,
   summarizeForecast,
 } from "@/lib/weather";
-
-export const dynamic = "force-dynamic";
 
 /** Keep home-page upstream calls gentle — free weather tiers rate-limit hard on Vercel. */
 const HOME_WEATHER_CONCURRENCY = 2;
@@ -82,7 +81,9 @@ export default async function HomePage({ searchParams }: Props) {
   return (
     <main>
       <header className="site-header">
-        <h1 className="brand">Drizzle.live</h1>
+        <h1 className="brand">
+          <BrandMark className="brand-mark" />
+        </h1>
         <SiteClock />
       </header>
       <p className="tagline">

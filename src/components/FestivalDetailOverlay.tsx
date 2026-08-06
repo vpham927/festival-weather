@@ -2,6 +2,7 @@
 
 import { ConfidenceNote } from "@/components/ConfidenceNote";
 import { CurrentWeather } from "@/components/CurrentWeather";
+import { FestivalEventLink } from "@/components/FestivalEventLink";
 import { FestivalFavicon } from "@/components/FestivalFavicon";
 import { FestivalForecast } from "@/components/FestivalForecast";
 import { SourceForecastGrid } from "@/components/SourceForecastGrid";
@@ -135,6 +136,15 @@ export function FestivalDetailOverlay({ festival, onClose }: Props) {
               {formatDateRange(festival.startDate, festival.endDate)}
               <span aria-hidden> · </span>
               {festival.location}
+              {festival.website ? (
+                <>
+                  <span aria-hidden> · </span>
+                  <FestivalEventLink
+                    festivalId={festival.id}
+                    website={festival.website}
+                  />
+                </>
+              ) : null}
             </p>
           </div>
           <button

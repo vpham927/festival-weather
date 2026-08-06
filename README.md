@@ -24,14 +24,17 @@ The app works with **Open-Meteo alone**. Extra keys raise confidence when source
 
 ## Caching
 
-Weather responses are cached **in memory** (works in `next dev` and production) so refreshes don’t re-hit every API.
+Weather consensus is cached in **two layers** so a public Vercel deploy does not hit upstream APIs on every page view:
+
+1. **Next.js Data Cache** (`unstable_cache`) — shared across serverless invocations, revalidates on the TTL
+2. **In-process memory** — dedupes parallel requests on a warm instance (e.g. home page loading many festivals)
 
 - Default TTL: **30 minutes**
-- Override with `WEATHER_CACHE_TTL_SECONDS` (e.g. `3600` while testing)
-- Set `0` to disable
-- Restart the dev server clears the cache (process memory)
+- Override with `WEATHER_CACHE_TTL_SECONDS` (e.g. `3600`)
+- Set `0` to disable both layers
+- Provider `fetch` calls also use short Next revalidate windows (5–30 min)
 
-Providers also set Next.js `fetch` revalidate tags (5–30 min); the in-memory layer is what protects you during local testing.
+After deploy, the first visitor for each lat/lon still warms the cache; later visitors reuse it until the TTL expires.
 
 ## Setup
 

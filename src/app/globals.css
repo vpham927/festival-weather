@@ -73,6 +73,31 @@ a {
   animation: rise 0.7s ease both;
 }
 
+.brand-mark {
+  display: inline;
+}
+
+.brand-i {
+  position: relative;
+  display: inline-block;
+  line-height: inherit;
+}
+
+.brand-i-stem {
+  display: inline-block;
+}
+
+.brand-raindrop {
+  position: absolute;
+  left: 45%;
+  top: -0.15em;
+  width: 0.28em;
+  height: 0.38em;
+  fill: var(--accent);
+  transform: translateX(-42%) rotate(-22deg);
+  pointer-events: none;
+}
+
 .site-clock {
   display: flex;
   flex-direction: column;
@@ -143,6 +168,18 @@ a {
   margin: -1px;
   overflow: hidden;
   clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
   border: 0;
 }
 
@@ -466,6 +503,20 @@ a {
 .festival-overlay-meta {
   margin-bottom: 0;
   animation: none;
+}
+
+.festival-event-link {
+  color: var(--accent);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.18em;
+  transition: color 0.2s ease, opacity 0.2s ease;
+}
+
+.festival-event-link:hover,
+.festival-event-link:focus-visible {
+  color: var(--ink);
+  outline: none;
 }
 
 .festival-overlay-close {

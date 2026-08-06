@@ -1,4 +1,5 @@
-import { withCache } from "./cache";
+import { unstable_cache } from "next/cache";
+import { getWeatherCacheTtlMs, withCache } from "./cache";
 import { buildConsensus, buildForecastConsensus } from "./consensus";
 import { majorityCondition, mean, median, round1 } from "./normalize";
 import { fetchGoogleCurrent, fetchGoogleForecast } from "./providers/google";
@@ -67,152 +68,199 @@ function envKeys() {
   };
 }
 
+function roundCoord(n: number): number {
+  return Number(n.toFixed(4));
+}
+
+function cacheTtlSeconds(): number {
+  const ms = getWeatherCacheTtlMs();
+  if (ms === 0) return 0;
+  return Math.max(60, Math.round(ms / 1000));
+}
+
+async function loadAggregatedWeather(
+  lat: number,
+  lon: number,
+): Promise<WeatherResponse> {
+  const { owmKey, tomorrowKey, weatherApiKey, googleKey } = envKeys();
+
+  const jobs: {
+    source: WeatherSourceName;
+    run: () => Promise<CurrentConditions>;
+  }[] = [
+    {
+      source: "open-meteo",
+      run: () => fetchOpenMeteoCurrent(lat, lon),
+    },
+  ];
+
+  if (owmKey) {
+    jobs.push({
+      source: "openweather",
+      run: () => fetchOpenWeatherCurrent(lat, lon, owmKey),
+    });
+  }
+
+  if (tomorrowKey) {
+    jobs.push({
+      source: "tomorrow",
+      run: () => fetchTomorrowCurrent(lat, lon, tomorrowKey),
+    });
+  }
+
+  if (weatherApiKey) {
+    jobs.push({
+      source: "weatherapi",
+      run: () => fetchWeatherApiCurrent(lat, lon, weatherApiKey),
+    });
+  }
+
+  if (googleKey) {
+    jobs.push({
+      source: "google",
+      run: () => fetchGoogleCurrent(lat, lon, googleKey),
+    });
+  }
+
+  const settled = await Promise.allSettled(jobs.map((j) => j.run()));
+
+  const results = settled.map((result, i) => {
+    const source = jobs[i]!.source;
+    if (result.status === "fulfilled") {
+      return { source, current: result.value };
+    }
+    console.error(`[weather] ${source} failed:`, result.reason);
+    return { source, error: result.reason };
+  });
+
+  return buildConsensus(results);
+}
+
+async function loadAggregatedForecast(
+  lat: number,
+  lon: number,
+  start: string,
+  end: string,
+): Promise<ForecastResponse> {
+  const { owmKey, tomorrowKey, weatherApiKey, googleKey } = envKeys();
+
+  const today = new Date().toISOString().slice(0, 10);
+  const horizon = addDays(today, FORECAST_HORIZON_DAYS);
+  const clampedStart = start < today ? today : start;
+  const clampedEnd = end > horizon ? horizon : end;
+  if (clampedStart > clampedEnd) {
+    return emptyForecastResponse();
+  }
+
+  const jobs: {
+    source: WeatherSourceName;
+    run: () => Promise<DailyForecast[]>;
+  }[] = [
+    {
+      source: "open-meteo",
+      run: () => fetchOpenMeteoForecast(lat, lon, clampedStart, clampedEnd),
+    },
+  ];
+
+  if (owmKey) {
+    jobs.push({
+      source: "openweather",
+      run: () =>
+        fetchOpenWeatherForecast(lat, lon, clampedStart, clampedEnd, owmKey),
+    });
+  }
+
+  if (tomorrowKey) {
+    jobs.push({
+      source: "tomorrow",
+      run: () =>
+        fetchTomorrowForecast(lat, lon, clampedStart, clampedEnd, tomorrowKey),
+    });
+  }
+
+  if (weatherApiKey) {
+    jobs.push({
+      source: "weatherapi",
+      run: () =>
+        fetchWeatherApiForecast(
+          lat,
+          lon,
+          clampedStart,
+          clampedEnd,
+          weatherApiKey,
+        ),
+    });
+  }
+
+  if (googleKey) {
+    jobs.push({
+      source: "google",
+      run: () =>
+        fetchGoogleForecast(lat, lon, clampedStart, clampedEnd, googleKey),
+    });
+  }
+
+  const settled = await Promise.allSettled(jobs.map((j) => j.run()));
+
+  const results = settled.map((result, i) => {
+    const source = jobs[i]!.source;
+    if (result.status === "fulfilled") {
+      return { source, days: result.value };
+    }
+    console.error(`[forecast] ${source} failed:`, result.reason);
+    return { source, error: result.reason };
+  });
+
+  return buildForecastConsensus(results);
+}
+
+/**
+ * Current conditions consensus. Cached in-process (warm instances) and in
+ * Next.js Data Cache so Vercel serverless invocations reuse results.
+ */
 export async function getAggregatedWeather(
   query: WeatherQuery,
 ): Promise<WeatherResponse> {
-  const { lat, lon } = query;
-  const key = `current:${lat.toFixed(4)},${lon.toFixed(4)}`;
+  const lat = roundCoord(query.lat);
+  const lon = roundCoord(query.lon);
+  const key = `current:${lat},${lon}`;
+  const revalidate = cacheTtlSeconds();
 
-  return withCache(key, async () => {
-    const { owmKey, tomorrowKey, weatherApiKey, googleKey } = envKeys();
+  if (revalidate === 0) {
+    return loadAggregatedWeather(lat, lon);
+  }
 
-    const jobs: {
-      source: WeatherSourceName;
-      run: () => Promise<CurrentConditions>;
-    }[] = [
-      {
-        source: "open-meteo",
-        run: () => fetchOpenMeteoCurrent(lat, lon),
-      },
-    ];
+  const fromDataCache = unstable_cache(
+    async () => loadAggregatedWeather(lat, lon),
+    ["weather-current", String(lat), String(lon)],
+    { revalidate, tags: ["weather", "weather-current"] },
+  );
 
-    if (owmKey) {
-      jobs.push({
-        source: "openweather",
-        run: () => fetchOpenWeatherCurrent(lat, lon, owmKey),
-      });
-    }
-
-    if (tomorrowKey) {
-      jobs.push({
-        source: "tomorrow",
-        run: () => fetchTomorrowCurrent(lat, lon, tomorrowKey),
-      });
-    }
-
-    if (weatherApiKey) {
-      jobs.push({
-        source: "weatherapi",
-        run: () => fetchWeatherApiCurrent(lat, lon, weatherApiKey),
-      });
-    }
-
-    if (googleKey) {
-      jobs.push({
-        source: "google",
-        run: () => fetchGoogleCurrent(lat, lon, googleKey),
-      });
-    }
-
-    const settled = await Promise.allSettled(jobs.map((j) => j.run()));
-
-    const results = settled.map((result, i) => {
-      const source = jobs[i].source;
-      if (result.status === "fulfilled") {
-        return { source, current: result.value };
-      }
-      console.error(`[weather] ${source} failed:`, result.reason);
-      return { source, error: result.reason };
-    });
-
-    return buildConsensus(results);
-  });
+  return withCache(key, () => fromDataCache());
 }
 
+/**
+ * Festival-date forecast consensus. Same two-layer cache as current weather.
+ */
 export async function getAggregatedForecast(
   query: ForecastQuery,
 ): Promise<ForecastResponse> {
-  const { lat, lon, start, end } = query;
-  const key = `forecast:${lat.toFixed(4)},${lon.toFixed(4)}:${start}:${end}`;
+  const lat = roundCoord(query.lat);
+  const lon = roundCoord(query.lon);
+  const key = `forecast:${lat},${lon}:${query.start}:${query.end}`;
+  const revalidate = cacheTtlSeconds();
 
-  return withCache(key, async () => {
-    const { owmKey, tomorrowKey, weatherApiKey, googleKey } = envKeys();
+  if (revalidate === 0) {
+    return loadAggregatedForecast(lat, lon, query.start, query.end);
+  }
 
-    const today = new Date().toISOString().slice(0, 10);
-    const horizon = addDays(today, FORECAST_HORIZON_DAYS);
-    const clampedStart = start < today ? today : start;
-    const clampedEnd = end > horizon ? horizon : end;
-    if (clampedStart > clampedEnd) {
-      return emptyForecastResponse();
-    }
+  const fromDataCache = unstable_cache(
+    async () => loadAggregatedForecast(lat, lon, query.start, query.end),
+    ["weather-forecast", String(lat), String(lon), query.start, query.end],
+    { revalidate, tags: ["weather", "weather-forecast"] },
+  );
 
-    const jobs: {
-      source: WeatherSourceName;
-      run: () => Promise<DailyForecast[]>;
-    }[] = [
-      {
-        source: "open-meteo",
-        run: () => fetchOpenMeteoForecast(lat, lon, clampedStart, clampedEnd),
-      },
-    ];
-
-    if (owmKey) {
-      jobs.push({
-        source: "openweather",
-        run: () =>
-          fetchOpenWeatherForecast(lat, lon, clampedStart, clampedEnd, owmKey),
-      });
-    }
-
-    if (tomorrowKey) {
-      jobs.push({
-        source: "tomorrow",
-        run: () =>
-          fetchTomorrowForecast(
-            lat,
-            lon,
-            clampedStart,
-            clampedEnd,
-            tomorrowKey,
-          ),
-      });
-    }
-
-    if (weatherApiKey) {
-      jobs.push({
-        source: "weatherapi",
-        run: () =>
-          fetchWeatherApiForecast(
-            lat,
-            lon,
-            clampedStart,
-            clampedEnd,
-            weatherApiKey,
-          ),
-      });
-    }
-
-    if (googleKey) {
-      jobs.push({
-        source: "google",
-        run: () =>
-          fetchGoogleForecast(lat, lon, clampedStart, clampedEnd, googleKey),
-      });
-    }
-
-    const settled = await Promise.allSettled(jobs.map((j) => j.run()));
-
-    const results = settled.map((result, i) => {
-      const source = jobs[i].source;
-      if (result.status === "fulfilled") {
-        return { source, days: result.value };
-      }
-      console.error(`[forecast] ${source} failed:`, result.reason);
-      return { source, error: result.reason };
-    });
-
-    return buildForecastConsensus(results);
-  });
+  return withCache(key, () => fromDataCache());
 }
 
 export function summarizeForecast(

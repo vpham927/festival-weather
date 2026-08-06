@@ -9,8 +9,6 @@ import type { ForecastResponse, WeatherResponse } from "@/lib/weather/types";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-export const dynamic = "force-dynamic";
-
 type Props = {
   params: Promise<{ id: string }>;
 };
