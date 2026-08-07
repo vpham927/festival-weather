@@ -1,10 +1,15 @@
-import { and, asc, eq, gte, ilike, or, sql } from "drizzle-orm";
+import { and, asc, eq, gte, ilike, lte, or, sql } from "drizzle-orm";
 import { cache } from "react";
 import {
   DEFAULT_FESTIVAL_CATEGORY,
   isFestivalCategory,
   type FestivalCategory,
 } from "@/data/festival-categories";
+import {
+  DEFAULT_FESTIVAL_LIST_RANGE,
+  FESTIVAL_WEEK_HORIZON_DAYS,
+  type FestivalListRange,
+} from "@/data/festival-range";
 import {
   compareFestivalsByPopularityThenDate,
   festivalSeed,
@@ -13,6 +18,8 @@ import {
 import { getDb } from "@/db/client";
 import { festivals as festivalsTable } from "@/db/schema";
 import type { FestivalRow } from "@/db/schema";
+
+export type { FestivalListRange } from "@/data/festival-range";
 
 let warnedNoDatabase = false;
 
@@ -28,9 +35,34 @@ function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
+function addDaysIso(isoDate: string, days: number): string {
+  const d = new Date(`${isoDate}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
 /** Still on or not yet started — hide festivals that have already finished. */
 function isActiveOrUpcoming(festival: Festival, today = todayIso()): boolean {
   return festival.endDate >= today;
+}
+
+/** Overlaps the next N days: still active and starts on or before the horizon. */
+function overlapsWeek(
+  festival: Festival,
+  today = todayIso(),
+  horizonDays = FESTIVAL_WEEK_HORIZON_DAYS,
+): boolean {
+  const horizon = addDaysIso(today, horizonDays);
+  return festival.endDate >= today && festival.startDate <= horizon;
+}
+
+function matchesRange(
+  festival: Festival,
+  range: FestivalListRange,
+  today = todayIso(),
+): boolean {
+  if (range === "week") return overlapsWeek(festival, today);
+  return isActiveOrUpcoming(festival, today);
 }
 
 function rowCategory(value: string): FestivalCategory {
@@ -54,14 +86,21 @@ function toFestival(row: FestivalRow): Festival {
   };
 }
 
-function seedSorted(category: FestivalCategory): Festival[] {
+function seedSorted(
+  category: FestivalCategory,
+  range: FestivalListRange,
+): Festival[] {
   return [...festivalSeed]
-    .filter((f) => isActiveOrUpcoming(f) && f.category === category)
+    .filter((f) => matchesRange(f, range) && f.category === category)
     .sort(compareFestivalsByPopularityThenDate);
 }
 
-function seedFiltered(category: FestivalCategory, query?: string): Festival[] {
-  const sorted = seedSorted(category);
+function seedFiltered(
+  category: FestivalCategory,
+  range: FestivalListRange,
+  query?: string,
+): Festival[] {
+  const sorted = seedSorted(category, range);
   const q = query?.trim().toLowerCase();
   if (!q) return sorted;
   return sorted.filter(
@@ -77,47 +116,53 @@ const popularityThenDate = [
 ] as const;
 
 /**
- * Festivals ordered by curated popularity, then start date. Only upcoming and
- * currently-running events are returned. Filtering happens in SQL so the list
- * can grow worldwide without shipping every row to the client.
+ * Festivals ordered by curated popularity, then start date. Filtering happens
+ * in SQL so the list can grow without shipping every row to the client.
+ *
+ * - `week` (default): dates overlap the next 7 days
+ * - `all`: any upcoming / currently-running event
  */
 export const listFestivals = cache(
   async (
     query?: string,
     category: FestivalCategory = DEFAULT_FESTIVAL_CATEGORY,
+    range: FestivalListRange = DEFAULT_FESTIVAL_LIST_RANGE,
   ): Promise<Festival[]> => {
     const db = getDb();
     if (!db) {
       warnNoDatabase();
-      return seedFiltered(category, query);
+      return seedFiltered(category, range, query);
     }
 
     const q = query?.trim();
     const today = todayIso();
-    const active = gte(festivalsTable.endDate, today);
-    const byCategory = eq(festivalsTable.category, category);
+    const conditions = [
+      gte(festivalsTable.endDate, today),
+      eq(festivalsTable.category, category),
+    ];
+    if (range === "week") {
+      conditions.push(
+        lte(
+          festivalsTable.startDate,
+          addDaysIso(today, FESTIVAL_WEEK_HORIZON_DAYS),
+        ),
+      );
+    }
+    if (q) {
+      conditions.push(
+        or(
+          ilike(festivalsTable.name, `%${q}%`),
+          ilike(festivalsTable.location, `%${q}%`),
+        )!,
+      );
+    }
 
     try {
-      const rows = await (q
-        ? db
-            .select()
-            .from(festivalsTable)
-            .where(
-              and(
-                active,
-                byCategory,
-                or(
-                  ilike(festivalsTable.name, `%${q}%`),
-                  ilike(festivalsTable.location, `%${q}%`),
-                ),
-              ),
-            )
-            .orderBy(...popularityThenDate)
-        : db
-            .select()
-            .from(festivalsTable)
-            .where(and(active, byCategory))
-            .orderBy(...popularityThenDate));
+      const rows = await db
+        .select()
+        .from(festivalsTable)
+        .where(and(...conditions))
+        .orderBy(...popularityThenDate);
 
       return rows.map(toFestival);
     } catch (error) {
@@ -125,7 +170,7 @@ export const listFestivals = cache(
         "[festivals] Database query failed — falling back to the built-in list:",
         error,
       );
-      return seedFiltered(category, query);
+      return seedFiltered(category, range, query);
     }
   },
 );

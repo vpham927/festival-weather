@@ -3,6 +3,7 @@ import type { FestivalListItem } from "@/components/FestivalList";
 import { BrandMark } from "@/components/BrandMark";
 import { SiteClock } from "@/components/SiteClock";
 import { parseFestivalCategory } from "@/data/festival-categories";
+import { parseFestivalListRange } from "@/data/festival-range";
 import { listFestivals } from "@/data/festival-repository";
 import { mapPool } from "@/lib/map-pool";
 import {
@@ -15,13 +16,14 @@ import {
 const HOME_WEATHER_CONCURRENCY = 2;
 
 type Props = {
-  searchParams: Promise<{ category?: string }>;
+  searchParams: Promise<{ category?: string; range?: string }>;
 };
 
 export default async function HomePage({ searchParams }: Props) {
   const params = await searchParams;
   const category = parseFestivalCategory(params.category);
-  const festivals = await listFestivals(undefined, category);
+  const range = parseFestivalListRange(params.range);
+  const festivals = await listFestivals(undefined, category, range);
 
   const weatherResults = await mapPool(
     festivals,
@@ -90,7 +92,7 @@ export default async function HomePage({ searchParams }: Props) {
         Live conditions and festival-weekend forecasts, blended from multiple
         weather sources.
       </p>
-      <FestivalList items={items} category={category} />
+      <FestivalList items={items} category={category} range={range} />
     </main>
   );
 }

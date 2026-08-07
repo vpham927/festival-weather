@@ -2,10 +2,15 @@
 
 import type { Festival } from "@/data/festivals";
 import {
+  DEFAULT_FESTIVAL_CATEGORY,
   FESTIVAL_CATEGORIES,
   FESTIVAL_CATEGORY_LABELS,
   type FestivalCategory,
 } from "@/data/festival-categories";
+import {
+  DEFAULT_FESTIVAL_LIST_RANGE,
+  type FestivalListRange,
+} from "@/data/festival-range";
 import { FestivalDetailOverlay } from "@/components/FestivalDetailOverlay";
 import { FestivalFavicon } from "@/components/FestivalFavicon";
 import { FestivalPinButton } from "@/components/FestivalPinButton";
@@ -41,13 +46,27 @@ export type FestivalListItem = {
 type Props = {
   items: FestivalListItem[];
   category: FestivalCategory;
+  range: FestivalListRange;
 };
 
-export function FestivalList({ items, category }: Props) {
+function homeHref(category: FestivalCategory, range: FestivalListRange): string {
+  const params = new URLSearchParams();
+  if (category !== DEFAULT_FESTIVAL_CATEGORY) {
+    params.set("category", category);
+  }
+  if (range !== DEFAULT_FESTIVAL_LIST_RANGE) {
+    params.set("range", range);
+  }
+  const qs = params.toString();
+  return qs ? `/?${qs}` : "/";
+}
+
+export function FestivalList({ items, category, range }: Props) {
   const [query, setQuery] = useState("");
   const [isPending, startTransition] = useTransition();
   const [selected, setSelected] = useState<Festival | null>(null);
   const { pinnedIds, isPinned, togglePin, ready } = usePinnedFestivalsReady();
+  const showAllHref = homeHref(category, "all");
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -78,28 +97,47 @@ export function FestivalList({ items, category }: Props) {
 
   return (
     <div className="festival-list">
-      <div
-        className="category-pills"
-        role="tablist"
-        aria-label="Festival category"
-      >
-        {FESTIVAL_CATEGORIES.map((value) => {
-          const selectedCategory = value === category;
-          const href =
-            value === "music" ? "/" : `/?category=${value}`;
-          return (
-            <Link
-              key={value}
-              href={href}
-              role="tab"
-              aria-selected={selectedCategory}
-              className={`category-pill${selectedCategory ? " is-active" : ""}`}
-              scroll={false}
-            >
-              {FESTIVAL_CATEGORY_LABELS[value]}
-            </Link>
-          );
-        })}
+      <div className="list-toolbar">
+        <div
+          className="category-pills"
+          role="tablist"
+          aria-label="Festival category"
+        >
+          {FESTIVAL_CATEGORIES.map((value) => {
+            const selectedCategory = value === category;
+            return (
+              <Link
+                key={value}
+                href={homeHref(value, range)}
+                role="tab"
+                aria-selected={selectedCategory}
+                className={`category-pill${selectedCategory ? " is-active" : ""}`}
+                scroll={false}
+              >
+                {FESTIVAL_CATEGORY_LABELS[value]}
+              </Link>
+            );
+          })}
+        </div>
+
+        <div className="range-toggle" role="group" aria-label="Date range">
+          <Link
+            href={homeHref(category, "week")}
+            className={`range-toggle-link${range === "week" ? " is-active" : ""}`}
+            aria-current={range === "week" ? "page" : undefined}
+            scroll={false}
+          >
+            This week
+          </Link>
+          <Link
+            href={showAllHref}
+            className={`range-toggle-link${range === "all" ? " is-active" : ""}`}
+            aria-current={range === "all" ? "page" : undefined}
+            scroll={false}
+          >
+            Show all
+          </Link>
+        </div>
       </div>
 
       <label className="search-label" htmlFor="festival-search">
@@ -119,7 +157,20 @@ export function FestivalList({ items, category }: Props) {
       />
 
       {filtered.length === 0 ? (
-        <p className="festival-empty">No festivals match that search.</p>
+        <p className="festival-empty">
+          {query.trim() ? (
+            "No festivals match that search."
+          ) : range === "week" ? (
+            <>
+              No festivals on this week.{" "}
+              <Link href={showAllHref} className="festival-empty-link">
+                Show all upcoming
+              </Link>
+            </>
+          ) : (
+            "No festivals in this category."
+          )}
+        </p>
       ) : (
         <ul
           className={`festival-cards ${isPending ? "is-pending" : ""}`}
