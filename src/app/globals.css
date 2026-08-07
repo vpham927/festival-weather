@@ -265,8 +265,46 @@ a {
 }
 
 .festival-card {
+  position: relative;
   animation: festival-in 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
   animation-delay: var(--row-delay, 0ms);
+}
+
+.festival-pin {
+  position: absolute;
+  top: 0.55rem;
+  right: 0.55rem;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink-muted);
+  cursor: pointer;
+  transition: color 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+}
+
+.festival-pin:hover,
+.festival-pin:focus-visible {
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-color: rgba(94, 207, 168, 0.35);
+  outline: none;
+}
+
+.festival-pin.is-pinned {
+  color: var(--accent);
+}
+
+.festival-pin-icon {
+  width: 1.15rem;
+  height: 1.15rem;
+  display: block;
 }
 
 .festival-card-link {
@@ -277,7 +315,7 @@ a {
   width: 100%;
   height: 100%;
   min-height: 11.5rem;
-  padding: 1.15rem 1.2rem 1.25rem;
+  padding: 1.15rem 2.4rem 1.25rem 1.2rem;
   border: 1px solid var(--line);
   border-top: 2px solid var(--accent);
   background: var(--surface);

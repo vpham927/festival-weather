@@ -8,7 +8,9 @@ import {
 } from "@/data/festival-categories";
 import { FestivalDetailOverlay } from "@/components/FestivalDetailOverlay";
 import { FestivalFavicon } from "@/components/FestivalFavicon";
+import { FestivalPinButton } from "@/components/FestivalPinButton";
 import { NoForecastIcon, WeatherIcon } from "@/components/WeatherIcon";
+import { usePinnedFestivalsReady } from "@/hooks/usePinnedFestivals";
 import { conditionLabel, festivalDisplayName, formatDateRange } from "@/lib/format";
 import type {
   Confidence,
@@ -45,16 +47,34 @@ export function FestivalList({ items, category }: Props) {
   const [query, setQuery] = useState("");
   const [isPending, startTransition] = useTransition();
   const [selected, setSelected] = useState<Festival | null>(null);
+  const { pinnedIds, isPinned, togglePin, ready } = usePinnedFestivalsReady();
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return items;
-    return items.filter(
-      ({ festival: f }) =>
-        f.name.toLowerCase().includes(q) ||
-        f.location.toLowerCase().includes(q),
-    );
-  }, [items, query]);
+    const matched = !q
+      ? items
+      : items.filter(
+          ({ festival: f }) =>
+            f.name.toLowerCase().includes(q) ||
+            f.location.toLowerCase().includes(q),
+        );
+
+    if (!ready || pinnedIds.length === 0) return matched;
+
+    const pinIndex = new Map(pinnedIds.map((id, i) => [id, i]));
+    return [...matched].sort((a, b) => {
+      const aPin = pinIndex.has(a.festival.id);
+      const bPin = pinIndex.has(b.festival.id);
+      if (aPin && bPin) {
+        return (
+          (pinIndex.get(a.festival.id) ?? 0) -
+          (pinIndex.get(b.festival.id) ?? 0)
+        );
+      }
+      if (aPin !== bPin) return aPin ? -1 : 1;
+      return 0; // keep server popular / date order
+    });
+  }, [items, query, pinnedIds, ready]);
 
   return (
     <div className="festival-list">
@@ -115,6 +135,12 @@ export function FestivalList({ items, category }: Props) {
                 } as CSSProperties
               }
             >
+              <FestivalPinButton
+                festivalId={f.id}
+                festivalName={festivalDisplayName(f.name)}
+                pinned={ready && isPinned(f.id)}
+                onToggle={togglePin}
+              />
               <button
                 type="button"
                 className="festival-card-link"

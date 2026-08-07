@@ -71,7 +71,16 @@ npm run db:seed
 | `npm run db:enrich-websites` | Replaces listing URLs with Wikidata official sites |
 | `npm run db:studio` | Opens Drizzle Studio to browse rows                 |
 
-Schema lives in `src/db/schema.ts`: slug `id` primary key, `name`, `location`, `country`, `lat`/`lon`, `start_date`/`end_date`, `website`, `icon_url`, `category` (`music` | `film` | `food` | `other`), timestamps, plus indexes on start date, country, and category. Search filtering runs in SQL (`ilike`), so the table can grow worldwide without shipping every row to the client.
+Schema lives in `src/db/schema.ts`: slug `id` primary key, `name`, `location`, `country`, `lat`/`lon`, `start_date`/`end_date`, `website`, `icon_url`, `category` (`music` | `film` | `food` | `other`), `popularity_rank` (0 = normal; 1+ = featured, lower = higher), timestamps, plus indexes on start date, country, category, and popularity. Search filtering runs in SQL (`ilike`), so the table can grow worldwide without shipping every row to the client.
+
+## Popular festivals
+
+Featured festivals sort above the normal date order. Set ranks in:
+
+1. [`src/data/festival-popularity.ts`](src/data/festival-popularity.ts) then `npm run db:seed`, or
+2. Drizzle Studio (`npm run db:studio`) — edit `popularity_rank` on rows (`0` clears featured status)
+
+User pins (star on each card) are stored in the browser and always sort above curated popular festivals.
 
 ## Festivals
 

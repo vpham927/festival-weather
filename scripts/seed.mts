@@ -31,6 +31,7 @@ await db
       website: sql`excluded.website`,
       iconUrl: sql`excluded.icon_url`,
       category: sql`excluded.category`,
+      popularityRank: sql`excluded.popularity_rank`,
       updatedAt: sql`now()`,
     },
   });

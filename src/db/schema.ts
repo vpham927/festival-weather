@@ -2,6 +2,7 @@ import {
   date,
   doublePrecision,
   index,
+  integer,
   pgTable,
   text,
   timestamp,
@@ -25,6 +26,11 @@ export const festivals = pgTable(
     iconUrl: text("icon_url").notNull().default(""),
     /** App category: music | film | food | other */
     category: text("category").notNull().default("other"),
+    /**
+     * Curated popularity. 0 = not featured; 1+ = featured order
+     * (lower number = higher on the list).
+     */
+    popularityRank: integer("popularity_rank").notNull().default(0),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -36,6 +42,7 @@ export const festivals = pgTable(
     index("festivals_start_date_idx").on(table.startDate),
     index("festivals_country_idx").on(table.country),
     index("festivals_category_idx").on(table.category),
+    index("festivals_popularity_rank_idx").on(table.popularityRank),
   ],
 );
 

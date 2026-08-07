@@ -1,11 +1,15 @@
-import { and, asc, eq, gte, ilike, or } from "drizzle-orm";
+import { and, asc, eq, gte, ilike, or, sql } from "drizzle-orm";
 import { cache } from "react";
 import {
   DEFAULT_FESTIVAL_CATEGORY,
   isFestivalCategory,
   type FestivalCategory,
 } from "@/data/festival-categories";
-import { festivalSeed, type Festival } from "@/data/festivals";
+import {
+  compareFestivalsByPopularityThenDate,
+  festivalSeed,
+  type Festival,
+} from "@/data/festivals";
 import { getDb } from "@/db/client";
 import { festivals as festivalsTable } from "@/db/schema";
 import type { FestivalRow } from "@/db/schema";
@@ -46,13 +50,14 @@ function toFestival(row: FestivalRow): Festival {
     website: row.website,
     iconUrl: row.iconUrl,
     category: rowCategory(row.category),
+    popularityRank: row.popularityRank ?? 0,
   };
 }
 
 function seedSorted(category: FestivalCategory): Festival[] {
   return [...festivalSeed]
     .filter((f) => isActiveOrUpcoming(f) && f.category === category)
-    .sort((a, b) => a.startDate.localeCompare(b.startDate));
+    .sort(compareFestivalsByPopularityThenDate);
 }
 
 function seedFiltered(category: FestivalCategory, query?: string): Festival[] {
@@ -65,10 +70,16 @@ function seedFiltered(category: FestivalCategory, query?: string): Festival[] {
   );
 }
 
+const popularityThenDate = [
+  sql`case when ${festivalsTable.popularityRank} > 0 then 0 else 1 end`,
+  asc(festivalsTable.popularityRank),
+  asc(festivalsTable.startDate),
+] as const;
+
 /**
- * Festivals ordered by start date. Only upcoming and currently-running events
- * are returned. Filtering happens in SQL so the list can grow worldwide without
- * shipping every row to the client.
+ * Festivals ordered by curated popularity, then start date. Only upcoming and
+ * currently-running events are returned. Filtering happens in SQL so the list
+ * can grow worldwide without shipping every row to the client.
  */
 export const listFestivals = cache(
   async (
@@ -101,12 +112,12 @@ export const listFestivals = cache(
                 ),
               ),
             )
-            .orderBy(asc(festivalsTable.startDate))
+            .orderBy(...popularityThenDate)
         : db
             .select()
             .from(festivalsTable)
             .where(and(active, byCategory))
-            .orderBy(asc(festivalsTable.startDate)));
+            .orderBy(...popularityThenDate));
 
       return rows.map(toFestival);
     } catch (error) {

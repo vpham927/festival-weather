@@ -1,4 +1,5 @@
 import { generatedUkFestivals } from "./uk-festivals.generated.ts";
+import { FESTIVAL_POPULARITY_RANKS } from "./festival-popularity.ts";
 import { FESTIVAL_WEBSITE_OVERRIDES } from "./festival-website-overrides.ts";
 import { officialWebsite } from "./festival-websites.ts";
 import {
@@ -21,6 +22,11 @@ export type Festival = {
   /** Icon / favicon URL shown next to the name. */
   iconUrl: string;
   category: FestivalCategory;
+  /**
+   * Curated popularity. 0 = not featured; 1+ = featured
+   * (lower number = higher on the list).
+   */
+  popularityRank: number;
 };
 
 export type { FestivalCategory };
@@ -38,9 +44,10 @@ export function iconUrlFromWebsite(website: string, size = 64): string {
 }
 
 function festival(
-  partial: Omit<Festival, "iconUrl" | "category"> & {
+  partial: Omit<Festival, "iconUrl" | "category" | "popularityRank"> & {
     iconUrl?: string;
     category?: FestivalCategory;
+    popularityRank?: number;
   },
 ): Festival {
   const website = officialWebsite(partial.website);
@@ -48,6 +55,8 @@ function festival(
     ...partial,
     website,
     category: partial.category ?? DEFAULT_FESTIVAL_CATEGORY,
+    popularityRank:
+      partial.popularityRank ?? FESTIVAL_POPULARITY_RANKS[partial.id] ?? 0,
     iconUrl: partial.iconUrl ?? iconUrlFromWebsite(website),
   };
 }
@@ -290,6 +299,7 @@ function mergeFestivalSeed(
         endDate: row.endDate,
         website: FESTIVAL_WEBSITE_OVERRIDES[row.id] ?? row.website,
         category: normalizeFestivalCategory(row.category),
+        popularityRank: FESTIVAL_POPULARITY_RANKS[row.id] ?? 0,
       }),
     );
   }
@@ -306,11 +316,24 @@ function mergeFestivalSeed(
     }
   }
 
-  return [...byId.values()].sort((a, b) =>
-    a.startDate === b.startDate
-      ? a.name.localeCompare(b.name)
-      : a.startDate.localeCompare(b.startDate),
-  );
+  return [...byId.values()].sort(compareFestivalsByPopularityThenDate);
+}
+
+/** Featured (rank > 0) first by rank, then everyone else by start date. */
+export function compareFestivalsByPopularityThenDate(
+  a: Festival,
+  b: Festival,
+): number {
+  const aFeatured = a.popularityRank > 0 ? 0 : 1;
+  const bFeatured = b.popularityRank > 0 ? 0 : 1;
+  if (aFeatured !== bFeatured) return aFeatured - bFeatured;
+  if (a.popularityRank !== b.popularityRank) {
+    return a.popularityRank - b.popularityRank;
+  }
+  if (a.startDate !== b.startDate) {
+    return a.startDate.localeCompare(b.startDate);
+  }
+  return a.name.localeCompare(b.name);
 }
 
 /**
