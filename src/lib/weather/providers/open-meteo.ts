@@ -2,8 +2,10 @@ import type { CurrentConditions, DailyForecast } from "../types";
 import { conditionFromWmo } from "../normalize";
 
 type OpenMeteoResponse = {
+  utc_offset_seconds?: number;
   current?: {
-    time: string;
+    /** Unix seconds (GMT) when timeformat=unixtime; else local ISO without offset. */
+    time: number | string;
     temperature_2m: number | null;
     apparent_temperature: number | null;
     relative_humidity_2m: number | null;
@@ -12,6 +14,24 @@ type OpenMeteoResponse = {
     wind_speed_10m: number | null;
   };
 };
+
+/** Open-Meteo local ISO times have no zone; convert using utc_offset_seconds. */
+function openMeteoObservedAt(
+  time: number | string | undefined,
+  utcOffsetSeconds = 0,
+): string {
+  if (typeof time === "number" && Number.isFinite(time)) {
+    return new Date(time * 1000).toISOString();
+  }
+  if (typeof time === "string" && time.length > 0) {
+    // Treat wall-clock components as UTC, then subtract the API's local offset.
+    const utcMs = Date.parse(time.endsWith("Z") ? time : `${time}Z`);
+    if (!Number.isNaN(utcMs)) {
+      return new Date(utcMs - utcOffsetSeconds * 1000).toISOString();
+    }
+  }
+  return new Date().toISOString();
+}
 
 export async function fetchOpenMeteoCurrent(
   lat: number,
@@ -29,7 +49,9 @@ export async function fetchOpenMeteoCurrent(
       "wind_speed_10m",
     ].join(","),
     wind_speed_unit: "ms",
-    timezone: "auto",
+    // Unix seconds are absolute UTC — avoids mis-parsing timezone=auto local strings.
+    timeformat: "unixtime",
+    timezone: "GMT",
   });
 
   const res = await fetch(`https://api.open-meteo.com/v1/forecast?${params}`, {
@@ -52,7 +74,7 @@ export async function fetchOpenMeteoCurrent(
     precipMm: c.precipitation ?? 0,
     windMs: c.wind_speed_10m ?? 0,
     condition: conditionFromWmo(c.weather_code ?? 0),
-    observedAt: c.time ? new Date(c.time).toISOString() : new Date().toISOString(),
+    observedAt: openMeteoObservedAt(c.time, data.utc_offset_seconds ?? 0),
   };
 }
 

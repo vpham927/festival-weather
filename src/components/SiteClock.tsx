@@ -2,6 +2,7 @@
 
 import { useSyncExternalStore } from "react";
 
+/** Tick from the browser clock — never the server. */
 function subscribe(onStoreChange: () => void) {
   const id = window.setInterval(onStoreChange, 1000);
   return () => window.clearInterval(id);
@@ -11,6 +12,7 @@ function getClientSnapshot() {
   return Math.floor(Date.now() / 1000);
 }
 
+/** Placeholder until hydration so we never paint server/UTC time. */
 function getServerSnapshot() {
   return 0;
 }
@@ -21,6 +23,7 @@ function formatNow(epochSeconds: number): {
   zone: string;
 } {
   const date = new Date(epochSeconds * 1000);
+  // Omit timeZone so Intl uses the visitor's local zone.
   const zone =
     new Intl.DateTimeFormat("en-GB", { timeZoneName: "short" })
       .formatToParts(date)
@@ -37,6 +40,7 @@ function formatNow(epochSeconds: number): {
       hour: "2-digit",
       minute: "2-digit",
       second: "2-digit",
+      hour12: false,
     }),
     zone,
   };

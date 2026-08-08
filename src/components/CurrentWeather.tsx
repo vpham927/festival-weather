@@ -1,3 +1,5 @@
+"use client";
+
 import { WeatherIcon } from "@/components/WeatherIcon";
 import { conditionLabel } from "@/lib/format";
 import type { ConsensusCurrent } from "@/lib/weather/types";
@@ -5,6 +7,16 @@ import type { ConsensusCurrent } from "@/lib/weather/types";
 type Props = {
   current: ConsensusCurrent | null;
 };
+
+function formatObservedAt(iso: string): string {
+  return new Date(iso).toLocaleString("en-GB", {
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+}
 
 export function CurrentWeather({ current }: Props) {
   if (!current) {
@@ -15,18 +27,9 @@ export function CurrentWeather({ current }: Props) {
     );
   }
 
-  const observed = new Date(current.observedAt);
-  const observedLabel = observed.toLocaleString("en-GB", {
-    day: "numeric",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-    timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-  });
-
   return (
     <article className="current-weather">
-      <p className="current-observed">As of {observedLabel}</p>
+      <p className="current-observed">As of {formatObservedAt(current.observedAt)}</p>
       <div className="current-weather-head">
         <WeatherIcon condition={current.condition} size="lg" />
         <div>
