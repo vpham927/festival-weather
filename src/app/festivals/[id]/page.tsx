@@ -61,8 +61,6 @@ export default async function FestivalPage({ params }: Props) {
         {festival.location}
       </p>
 
-      <h2 className="section-label">Consensus now</h2>
-
       {fetchError ? <p className="weather-error">{fetchError}</p> : null}
 
       {weather ? (

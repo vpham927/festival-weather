@@ -167,7 +167,6 @@ export function FestivalDetailOverlay({ festival, onClose }: Props) {
 
           {!loading && weather ? (
             <>
-              <h3 className="section-label">Consensus now</h3>
               <CurrentWeather current={weather.consensus.current} />
               <ConfidenceNote
                 confidence={weather.consensus.confidence}

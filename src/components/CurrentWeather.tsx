@@ -21,6 +21,7 @@ export function CurrentWeather({ current }: Props) {
     month: "short",
     hour: "2-digit",
     minute: "2-digit",
+    timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
   });
 
   return (
