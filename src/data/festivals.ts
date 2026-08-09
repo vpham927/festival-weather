@@ -76,7 +76,9 @@ function normalizeName(name: string): string {
 
 /**
  * Hand-curated UK festivals with precise venue coordinates and official
- * websites. These win over generated rows when names match.
+ * websites. On name match with TripSapien, curated supplies place/coords/URL;
+ * TripSapien supplies start/end dates. Curated-only rows (no TripSapien match)
+ * are kept as-is.
  */
 export const curatedFestivals: Festival[] = [
   festival({
@@ -163,8 +165,8 @@ export const curatedFestivals: Festival[] = [
     country: "GB",
     lat: 50.4412,
     lon: -5.0418,
-    startDate: "2026-08-12",
-    endDate: "2026-08-16",
+    startDate: "2026-08-05",
+    endDate: "2026-08-09",
     website: "https://www.boardmasters.com",
   }),
   festival({
@@ -284,7 +286,22 @@ function mergeFestivalSeed(
     const match = curatedByNorm.get(normalizeName(row.name));
     if (match) {
       usedCurated.add(match.id);
-      merged.push(match);
+      // Dates from TripSapien; venue/website/id from curated.
+      merged.push(
+        festival({
+          id: match.id,
+          name: match.name,
+          location: match.location,
+          country: match.country,
+          lat: match.lat,
+          lon: match.lon,
+          startDate: row.startDate,
+          endDate: row.endDate,
+          website: match.website,
+          category: match.category,
+          popularityRank: match.popularityRank,
+        }),
+      );
       continue;
     }
     merged.push(
@@ -310,7 +327,7 @@ function mergeFestivalSeed(
 
   const byId = new Map<string, Festival>();
   for (const f of merged) {
-    // Prefer curated when duplicate ids collide after merge.
+    // Prefer curated-backed ids when duplicate ids collide after merge.
     if (!byId.has(f.id) || curated.some((c) => c.id === f.id)) {
       byId.set(f.id, f);
     }
@@ -337,9 +354,9 @@ export function compareFestivalsByPopularityThenDate(
 }
 
 /**
- * Full UK seed: TripSapien calendar (CC BY 4.0) plus curated overrides.
- * Seeds the database and doubles as the fallback when no DATABASE_URL
- * is configured.
+ * Full UK seed: TripSapien calendar (CC BY 4.0) plus curated venue/website
+ * overlays (dates stay from TripSapien when both exist). Seeds the database
+ * and doubles as the fallback when no DATABASE_URL is configured.
  */
 export const festivalSeed: Festival[] = mergeFestivalSeed(
   curatedFestivals,
